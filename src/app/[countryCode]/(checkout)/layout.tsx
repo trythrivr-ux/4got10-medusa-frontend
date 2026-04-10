@@ -1,3 +1,5 @@
+import "@lib/util/storage-polyfill"
+import "@lib/util/global-error-handler"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ChevronDown from "@modules/common/icons/chevron-down"
 import MedusaCTA from "@modules/layout/components/medusa-cta"
@@ -34,7 +36,9 @@ export default function CheckoutLayout({
           <div className="flex-1 basis-0" />
         </nav>
       </div>
-      <div className="relative" data-testid="checkout-container">{children}</div>
+      <div className="relative" data-testid="checkout-container">
+        {children}
+      </div>
       <div className="py-4 w-full flex items-center justify-center">
         <MedusaCTA />
       </div>

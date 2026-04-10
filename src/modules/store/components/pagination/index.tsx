@@ -1,16 +1,16 @@
 "use client"
 
-import { clx } from "@medusajs/ui"
+// import { clx } from "@medusajs/ui" // Removed to prevent localStorage SSR errors
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 export function Pagination({
   page,
   totalPages,
-  'data-testid': dataTestid
+  "data-testid": dataTestid,
 }: {
   page: number
   totalPages: number
-  'data-testid'?: string
+  "data-testid"?: string
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -108,7 +108,9 @@ export function Pagination({
   // Render the component
   return (
     <div className="flex justify-center w-full mt-12">
-      <div className="flex gap-3 items-end" data-testid={dataTestid}>{renderPageButtons()}</div>
+      <div className="flex gap-3 items-end" data-testid={dataTestid}>
+        {renderPageButtons()}
+      </div>
     </div>
   )
 }

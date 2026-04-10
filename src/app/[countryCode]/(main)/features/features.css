@@ -1,0 +1,28 @@
+/* Features page specific styling */
+body:has([data-page="features"]) {
+  background-color: #0E0E0E !important;
+}
+
+body:has([data-page="features"]) main {
+  background-color: #0E0E0E !important;
+}
+
+body:has([data-page="features"]) .nav-row-blend *,
+body:has([data-page="features"]) .nav-row-blend *:hover,
+body:has([data-page="features"]) .nav-row-blend *:focus,
+body:has([data-page="features"]) .nav-row-blend *:active {
+  color: #000 !important;
+}
+
+body:has([data-page="features"]) .nav-row-blend svg {
+  stroke: #000 !important;
+  fill: #000 !important;
+}
+
+body:has([data-page="features"]) .nav-row-blend img {
+  filter: invert(1) !important;
+}
+
+body:has([data-page="features"]) .nav-row-blend img[src*="flagcdn"] {
+  filter: none !important;
+}

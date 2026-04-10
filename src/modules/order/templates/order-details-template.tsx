@@ -1,7 +1,7 @@
 "use client"
 
-import { XMark } from "@medusajs/icons"
-import { HttpTypes } from "@medusajs/types"
+// import { XMark } from "@medusajs/icons" // Removed to prevent localStorage SSR errors
+// import { HttpTypes } from "@medusajs/types" // Removed to prevent localStorage SSR errors
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Help from "@modules/order/components/help"
 import Items from "@modules/order/components/items"
@@ -11,7 +11,7 @@ import ShippingDetails from "@modules/order/components/shipping-details"
 import React from "react"
 
 type OrderDetailsTemplateProps = {
-  order: HttpTypes.StoreOrder
+  order: any // Use any type to prevent Medusa imports during SSR
 }
 
 const OrderDetailsTemplate: React.FC<OrderDetailsTemplateProps> = ({

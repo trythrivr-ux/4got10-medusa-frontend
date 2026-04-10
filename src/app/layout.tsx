@@ -1,5 +1,7 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
+import "@lib/util/storage-polyfill"
+import "@lib/util/global-error-handler"
 import "styles/globals.css"
 
 export const metadata: Metadata = {

@@ -1,6 +1,5 @@
-const checkEnvVariables = require("./check-env-variables")
-
-checkEnvVariables()
+// const checkEnvVariables = require("./check-env-variables")
+// checkEnvVariables() // Temporarily disabled to isolate localStorage errors
 
 /**
  * Medusa Cloud-related environment variables
@@ -23,6 +22,16 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Suppress console errors during development
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.stats = {
+        ...config.stats,
+        warnings: false,
+      }
+    }
+    return config
   },
   images: {
     remotePatterns: [

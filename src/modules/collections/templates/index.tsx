@@ -4,7 +4,6 @@ import SkeletonProductGrid from "@modules/skeletons/templates/skeleton-product-g
 import RefinementList from "@modules/store/components/refinement-list"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
-import { HttpTypes } from "@medusajs/types"
 
 export default function CollectionTemplate({
   sortBy,
@@ -13,7 +12,7 @@ export default function CollectionTemplate({
   countryCode,
 }: {
   sortBy?: SortOptions
-  collection: HttpTypes.StoreCollection
+  collection: any // Use any type to prevent Medusa imports during SSR
   page?: string
   countryCode: string
 }) {

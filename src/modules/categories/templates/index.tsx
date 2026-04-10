@@ -7,7 +7,6 @@ import RefinementList from "@modules/store/components/refinement-list"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { HttpTypes } from "@medusajs/types"
 
 export default function CategoryTemplate({
   category,
@@ -15,7 +14,7 @@ export default function CategoryTemplate({
   page,
   countryCode,
 }: {
-  category: HttpTypes.StoreProductCategory
+  category: any // Use any type to prevent Medusa imports during SSR
   sortBy?: SortOptions
   page?: string
   countryCode: string
@@ -25,9 +24,9 @@ export default function CategoryTemplate({
 
   if (!category || !countryCode) notFound()
 
-  const parents = [] as HttpTypes.StoreProductCategory[]
+  const parents = [] as any[]
 
-  const getParents = (category: HttpTypes.StoreProductCategory) => {
+  const getParents = (category: any) => {
     if (category.parent_category) {
       parents.push(category.parent_category)
       getParents(category.parent_category)

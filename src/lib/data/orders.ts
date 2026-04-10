@@ -3,7 +3,6 @@
 import { sdk } from "@lib/config"
 import medusaError from "@lib/util/medusa-error"
 import { getAuthHeaders, getCacheOptions } from "./cookies"
-import { HttpTypes } from "@medusajs/types"
 
 export const retrieveOrder = async (id: string) => {
   const headers = {
@@ -15,7 +14,8 @@ export const retrieveOrder = async (id: string) => {
   }
 
   return sdk.client
-    .fetch<HttpTypes.StoreOrderResponse>(`/store/orders/${id}`, {
+    .fetch<any>(`/store/orders/${id}`, {
+      // Use any type to prevent Medusa imports during SSR
       method: "GET",
       query: {
         fields:

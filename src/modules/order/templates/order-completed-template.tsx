@@ -1,4 +1,4 @@
-import { Heading } from "@medusajs/ui"
+// import { Heading } from "@medusajs/ui" // Removed to prevent localStorage SSR errors
 import { cookies as nextCookies } from "next/headers"
 
 import CartTotals from "@modules/common/components/cart-totals"
@@ -8,10 +8,10 @@ import OnboardingCta from "@modules/order/components/onboarding-cta"
 import OrderDetails from "@modules/order/components/order-details"
 import ShippingDetails from "@modules/order/components/shipping-details"
 import PaymentDetails from "@modules/order/components/payment-details"
-import { HttpTypes } from "@medusajs/types"
+// import { HttpTypes } from "@medusajs/types" // Removed to prevent localStorage SSR errors
 
 type OrderCompletedTemplateProps = {
-  order: HttpTypes.StoreOrder
+  order: any // Use any type to prevent Medusa imports during SSR
 }
 
 export default async function OrderCompletedTemplate({

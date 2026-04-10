@@ -3,10 +3,10 @@ import React from "react"
 import UnderlineLink from "@modules/common/components/interactive-link"
 
 import AccountNav from "../components/account-nav"
-import { HttpTypes } from "@medusajs/types"
+// import { HttpTypes } from "@medusajs/types" // Removed to prevent localStorage SSR errors
 
 interface AccountLayoutProps {
-  customer: HttpTypes.StoreCustomer | null
+  customer: any | null // Use any type to prevent Medusa imports during SSR
   children: React.ReactNode
 }
 

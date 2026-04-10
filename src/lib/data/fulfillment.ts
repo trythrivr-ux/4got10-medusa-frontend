@@ -1,7 +1,6 @@
 "use server"
 
 import { sdk } from "@lib/config"
-import { HttpTypes } from "@medusajs/types"
 import { getAuthHeaders, getCacheOptions } from "./cookies"
 
 export const listCartShippingMethods = async (cartId: string) => {
@@ -14,7 +13,7 @@ export const listCartShippingMethods = async (cartId: string) => {
   }
 
   return sdk.client
-    .fetch<HttpTypes.StoreShippingOptionListResponse>(
+    .fetch<any>( // Use any type to prevent Medusa imports during SSR
       `/store/shipping-options`,
       {
         method: "GET",

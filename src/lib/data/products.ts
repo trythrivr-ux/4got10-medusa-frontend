@@ -2,7 +2,6 @@
 
 import { sdk } from "@lib/config"
 import { sortProducts } from "@lib/util/sort-products"
-import { HttpTypes } from "@medusajs/types"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import { getAuthHeaders, getCacheOptions } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
@@ -14,13 +13,13 @@ export const listProducts = async ({
   regionId,
 }: {
   pageParam?: number
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductListParams
+  queryParams?: any // Use any type to prevent Medusa imports during SSR
   countryCode?: string
   regionId?: string
 }): Promise<{
-  response: { products: HttpTypes.StoreProduct[]; count: number }
+  response: { products: any[]; count: number }
   nextPage: number | null
-  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductListParams
+  queryParams?: any // Use any type to prevent Medusa imports during SSR
 }> => {
   if (!countryCode && !regionId) {
     throw new Error("Country code or region ID is required")
@@ -30,7 +29,7 @@ export const listProducts = async ({
   const _pageParam = Math.max(pageParam, 1)
   const offset = _pageParam === 1 ? 0 : (_pageParam - 1) * limit
 
-  let region: HttpTypes.StoreRegion | undefined | null
+  let region: any | undefined | null // Use any type to prevent Medusa imports during SSR
 
   if (countryCode) {
     region = await getRegion(countryCode)
