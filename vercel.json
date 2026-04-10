@@ -1,4 +1,10 @@
 {
-  "buildCommand": "yarn build",
-  "outputDirectory": ".next"
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "env": {
+    "MEDUSA_BACKEND_URL": "https://4got10-production.up.railway.app",
+    "NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY": "apk_01KNVXSZ5C7541WRYVY2BQJ68H",
+    "NEXT_PUBLIC_DEFAULT_REGION": "us",
+    "NEXT_PUBLIC_BASE_URL": "https://4got10-medusa-frontend.vercel.app"
+  }
 }
