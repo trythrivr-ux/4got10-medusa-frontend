@@ -1,8 +1,8 @@
 import CartDropdown from "../cart-dropdown"
+import { retrieveCart } from "@lib/data/cart"
 
 export default async function CartButton() {
-  // Temporarily disable cart retrieval to prevent localStorage SSR errors
-  const cart = null
+  const cart = await retrieveCart().catch(() => null)
 
   return <CartDropdown cart={cart} />
 }

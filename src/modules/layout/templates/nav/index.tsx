@@ -4,12 +4,14 @@ import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
+import { listRegions } from "@lib/data/regions"
+import { getLocale } from "@lib/data/locale-actions"
 
 export default async function Nav() {
-  // Completely disable all data fetching to prevent localStorage SSR errors
-  const regions: StoreRegion[] = []
-  const locales: any[] = [] // Use any[] to match expected Locale type structure
-  const currentLocale: string | null = null
+  // Fetch regions from backend
+  const regions: StoreRegion[] = await listRegions().catch(() => [])
+  const currentLocale = await getLocale()
+  const locales: any[] = [] // TODO: Implement locale list fetching if needed
 
   return (
     <div className="sticky top-0 inset-x-0 z-50 group">
