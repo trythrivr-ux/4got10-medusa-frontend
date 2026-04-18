@@ -214,9 +214,9 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
   return (
     <group
       ref={groupRef}
-      position={[0, 1.5, 0]} // Higher up on display pedestal
+      position={[0, 1.9, 0]} // Higher up on display pedestal
       rotation={[-Math.PI / -1.09, 3.8, 3]} // Lay flat
-      scale={[1.2, 1.2, 1.2]}
+      scale={[1.55, 1.55, 1.55]}
       castShadow
       receiveShadow
     >

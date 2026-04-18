@@ -24,7 +24,7 @@ import { getLocale } from "@lib/data/locale-actions"
 export async function retrieveCart(cartId?: string, fields?: string) {
   const id = cartId || (await getCartId())
   fields ??=
-    "*items, *region, *items.product, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name"
+    "*items, *region, *items.product, *items.product.handle, *items.product.thumbnail, *items.product.images, *items.product.images.url, *items.variant, *items.variant.title, *items.variant.options, *items.variant.product, *items.variant.product.images, *items.variant.product.images.url, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name"
 
   if (!id) {
     return null
@@ -46,7 +46,7 @@ export async function retrieveCart(cartId?: string, fields?: string) {
       },
       headers,
       next,
-      cache: "force-cache",
+      cache: "no-store",
     })
     .then(({ cart }: { cart: HttpTypes.StoreCart }) => cart)
     .catch(() => null)
@@ -67,11 +67,11 @@ export async function getOrSetCart(countryCode: string) {
 
   if (!cart) {
     const locale = await getLocale()
-    const cartResp = await sdk.store.cart.create(
+    const cartResp = (await sdk.store.cart.create(
       { region_id: region.id, locale: locale || undefined },
       {},
       headers
-    )
+    )) as { cart: HttpTypes.StoreCart }
     cart = cartResp.cart
 
     await setCartId(cart.id)
@@ -102,14 +102,14 @@ export async function updateCart(data: HttpTypes.StoreUpdateCart) {
 
   return sdk.store.cart
     .update(cartId, data, {}, headers)
-    .then(async ({ cart }: { cart: HttpTypes.StoreCart }) => {
+    .then(async (response: any) => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
 
       const fulfillmentCacheTag = await getCacheTag("fulfillment")
       revalidateTag(fulfillmentCacheTag)
 
-      return cart
+      return response.cart
     })
     .catch(medusaError)
 }
@@ -245,9 +245,9 @@ export async function initiatePaymentSession(
     ...(await getAuthHeaders()),
   }
 
-  return sdk.store.payment
+  return (sdk as any).store.payment
     .initiatePaymentSession(cart, data, {}, headers)
-    .then(async (resp) => {
+    .then(async (resp: HttpTypes.StoreCart) => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
       return resp
@@ -339,7 +339,7 @@ export async function setAddresses(currentState: unknown, formData: FormData) {
     if (!formData) {
       throw new Error("No form data found when setting addresses")
     }
-    const cartId = getCartId()
+    const cartId = await getCartId()
     if (!cartId) {
       throw new Error("No existing cart found when setting addresses")
     }
@@ -404,7 +404,7 @@ export async function placeOrder(cartId?: string) {
 
   const cartRes = await sdk.store.cart
     .complete(id, {}, headers)
-    .then(async (cartRes) => {
+    .then(async (cartRes: any) => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
       return cartRes

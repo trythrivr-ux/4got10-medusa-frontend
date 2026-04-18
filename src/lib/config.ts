@@ -86,7 +86,38 @@ export const sdk = {
   client: {
     fetch: async <T>(input: any, init?: any): Promise<T> => {
       const url = typeof input === "string" ? input : input.toString()
-      const response = await fetch(`${MEDUSA_BACKEND_URL}${url}`, {
+
+      const searchParams = new URLSearchParams()
+      const query = init?.query
+
+      if (query && typeof query === "object") {
+        for (const [key, value] of Object.entries(query)) {
+          if (value === undefined || value === null) {
+            continue
+          }
+
+          if (Array.isArray(value)) {
+            const arrayKey = key.endsWith("[]") ? key : `${key}[]`
+            for (const v of value) {
+              if (v === undefined || v === null) continue
+              searchParams.append(arrayKey, String(v))
+            }
+            continue
+          }
+
+          if (typeof value === "object") {
+            searchParams.append(key, JSON.stringify(value))
+            continue
+          }
+
+          searchParams.append(key, String(value))
+        }
+      }
+
+      const queryString = searchParams.toString()
+      const urlWithQuery = queryString ? `${url}?${queryString}` : url
+
+      const response = await fetch(`${MEDUSA_BACKEND_URL}${urlWithQuery}`, {
         ...init,
         headers: {
           "Content-Type": "application/json",
@@ -96,7 +127,17 @@ export const sdk = {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        let details = ""
+        try {
+          const text = await response.text()
+          details = text ? ` - ${text.slice(0, 500)}` : ""
+        } catch {
+          // ignore
+        }
+
+        throw new Error(
+          `HTTP ${response.status}: ${response.statusText} (${urlWithQuery})${details}`
+        )
       }
 
       return await response.json()
@@ -104,9 +145,106 @@ export const sdk = {
   },
   store: {
     cart: {
-      create: async () => ({ cart: null }),
-      update: async () => ({ cart: null }),
-      retrieve: async () => ({ cart: null }),
+      create: async (
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch("/store/carts", {
+          method: "POST",
+          body: JSON.stringify(data ?? {}),
+          headers,
+        })
+      },
+      update: async (
+        cartId: string,
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(`/store/carts/${cartId}`, {
+          method: "POST",
+          body: JSON.stringify(data ?? {}),
+          headers,
+        })
+      },
+      retrieve: async (
+        cartId: string,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(`/store/carts/${cartId}`, {
+          method: "GET",
+          headers,
+        })
+      },
+      createLineItem: async (
+        cartId: string,
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(`/store/carts/${cartId}/line-items`, {
+          method: "POST",
+          body: JSON.stringify(data ?? {}),
+          headers,
+        })
+      },
+      updateLineItem: async (
+        cartId: string,
+        lineId: string,
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(
+          `/store/carts/${cartId}/line-items/${lineId}`,
+          {
+            method: "POST",
+            body: JSON.stringify(data ?? {}),
+            headers,
+          }
+        )
+      },
+      deleteLineItem: async (
+        cartId: string,
+        lineId: string,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(
+          `/store/carts/${cartId}/line-items/${lineId}`,
+          {
+            method: "DELETE",
+            headers,
+          }
+        )
+      },
+      addShippingMethod: async (
+        cartId: string,
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(
+          `/store/carts/${cartId}/shipping-methods`,
+          {
+            method: "POST",
+            body: JSON.stringify(data ?? {}),
+            headers,
+          }
+        )
+      },
+      complete: async (
+        cartId: string,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(`/store/carts/${cartId}/complete`, {
+          method: "POST",
+          headers,
+        })
+      },
     },
   },
 }

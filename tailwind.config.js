@@ -60,6 +60,7 @@ module.exports = {
       },
       fontFamily: {
         sans: [
+          "Plus Jakarta Sans",
           "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
@@ -69,6 +70,7 @@ module.exports = {
           "Ubuntu",
           "sans-serif",
         ],
+        "plus-jakarta": ["Plus Jakarta Sans", "sans-serif"],
       },
       keyframes: {
         ring: {

@@ -16,12 +16,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   return (
     <>
       <ErrorBoundary>
-        <div className="min-h-screen bg-white">
-          <header className="bg-black text-white p-4">
-            <h1 className="text-2xl font-bold">4got10</h1>
-          </header>
-          <main className="container mx-auto px-4 py-8">{props.children}</main>
-        </div>
+        <main className="w-full">{props.children}</main>
       </ErrorBoundary>
     </>
   )
