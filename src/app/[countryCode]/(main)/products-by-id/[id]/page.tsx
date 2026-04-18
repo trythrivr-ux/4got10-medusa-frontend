@@ -31,35 +31,40 @@ export default async function ProductByIdPage(props: Props) {
   const params = await props.params
   const searchParams = await props.searchParams
 
-  const region = await getRegion(params.countryCode)
+  try {
+    const region = await getRegion(params.countryCode)
 
-  if (!region) {
-    notFound()
-  }
+    if (!region) {
+      notFound()
+    }
 
-  const isLikelyProductId = params.id.startsWith("prod_")
+    const isLikelyProductId = params.id.startsWith("prod_")
 
-  const product = await listProducts({
-    countryCode: params.countryCode,
-    queryParams: isLikelyProductId
-      ? { id: [params.id] }
-      : { handle: params.id },
-  }).then(({ response }) => response.products[0])
+    const product = await listProducts({
+      countryCode: params.countryCode,
+      queryParams: isLikelyProductId
+        ? { id: [params.id] }
+        : { handle: params.id },
+    }).then(({ response }) => response.products[0])
 
-  if (!product || !product.id) {
-    notFound()
-  }
+    if (!product || !product.id) {
+      notFound()
+    }
 
-  const images = getImagesForVariant(product, searchParams.v_id)
+    const images = getImagesForVariant(product, searchParams.v_id)
 
-  return (
-    <div className="px-[12px]">
-      <div className="w-full overflow-hidden pt-[200px] max-h-[1200px] flex flex-col ">
-        <div className="w-full h-[900px] flex flex-col ">
-          <DeskScene />
+    return (
+      <div className="px-[12px]">
+        <div className="w-full overflow-hidden pt-[200px] max-h-[1200px] flex flex-col ">
+          <div className="w-full h-[900px] flex flex-col ">
+            <DeskScene />
+          </div>
         </div>
+        <div className="flex w-full h-[500px] bg-white rounded-[12px]"></div>
       </div>
-      <div className="flex w-full h-[500px] bg-white rounded-[12px]"></div>
-    </div>
-  )
+    )
+  } catch (error) {
+    console.error("Error loading product:", error)
+    notFound()
+  }
 }
