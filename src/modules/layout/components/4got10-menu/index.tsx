@@ -73,6 +73,7 @@ export default function FourGotTenMenu({
   const [isMenuExpanded, setIsMenuExpanded] = useState(false)
   const [isCartScrolling, setIsCartScrolling] = useState(false)
   const cartScrollRef = useRef<HTMLDivElement | null>(null)
+  const [isSmallScreen, setIsSmallScreen] = useState(false)
 
   useLayoutEffect(() => {
     if (!isMenuExpanded || !expandedMenuContentRef.current) {
@@ -176,6 +177,16 @@ export default function FourGotTenMenu({
     handleScroll()
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 450px)")
+    const update = () => setIsSmallScreen(mq.matches)
+
+    update()
+    mq.addEventListener("change", update)
+
+    return () => mq.removeEventListener("change", update)
   }, [])
 
   useLayoutEffect(() => {
@@ -468,25 +479,44 @@ export default function FourGotTenMenu({
         })
       }
 
-      tl.to(
-        menuBoxRef.current,
-        {
-          width: 142,
-          flex: "0 0 142px",
-          duration: 0.32,
-        },
-        0
-      )
+      if (!isSmallScreen) {
+        tl.to(
+          menuBoxRef.current,
+          {
+            width: 142,
+            flex: "0 0 142px",
+            duration: 0.32,
+          },
+          0
+        )
 
-      tl.to(
-        cartBoxRef.current,
-        {
-          width: expandedCartWidthRef.current ?? 142,
-          duration: 0.32,
-          clearProps: "width",
-        },
-        0
-      )
+        tl.to(
+          cartBoxRef.current,
+          {
+            width: expandedCartWidthRef.current ?? 142,
+            duration: 0.32,
+            clearProps: "width",
+          },
+          0
+        )
+      } else {
+        tl.set(
+          [menuBoxRef.current, cartBoxRef.current],
+          {
+            clearProps: "width",
+          },
+          0
+        )
+
+        tl.to(
+          [menuBoxRef.current, cartBoxRef.current],
+          {
+            flex: 1,
+            duration: 0.2,
+          },
+          0
+        )
+      }
 
       tl.set(
         pillsContainerRef.current,
@@ -546,7 +576,7 @@ export default function FourGotTenMenu({
       tl.to(
         inner,
         {
-          width: stuckWidth,
+          width: isSmallScreen ? "100%" : stuckWidth,
           duration: 0.42,
         },
         0
@@ -573,7 +603,7 @@ export default function FourGotTenMenu({
       tl.to(
         [logoLeftRef.current, logoRightRef.current],
         {
-          opacity: 1,
+          opacity: isSmallScreen ? 0 : 1,
           x: 0,
           duration: 0.28,
         },
@@ -599,6 +629,14 @@ export default function FourGotTenMenu({
         menuBoxRef.current,
         {
           clearProps: "flex,width",
+        },
+        0
+      )
+
+      tl.set(
+        [logoLeftRef.current, logoRightRef.current],
+        {
+          clearProps: "opacity",
         },
         0
       )
@@ -815,7 +853,7 @@ export default function FourGotTenMenu({
               ref={menuBoxRef}
               data-fourgot10-nonpill="true"
               onClick={() => setIsMenuExpanded((v) => !v)}
-              className="flex-1 h-full rounded-[10px] bg-[#FFFFFF]  px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out"
+              className="flex-1 h-full rounded-[10px] bg-[#FFFFFF]  px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small"
             >
               <div className="text-[12.5px] tracking-[0.01em]">Menu</div>
               <div className="flex items-center gap-[6px]">
@@ -825,7 +863,7 @@ export default function FourGotTenMenu({
             <div
               ref={pillsContainerRef}
               data-fourgot10-nonpill="true"
-              className="flex-[2] rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center gap-[6px]"
+              className="flex-[2] rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center gap-[6px] fourgot10-hide-on-small"
             >
               <Pill>Shop</Pill>
               <Pill>Magazine</Pill>
@@ -842,40 +880,36 @@ export default function FourGotTenMenu({
                 />
               </Pill>
             </div>
-            <div className="flex h-full items-center gap-[6px]">
+            <div
+              ref={accountNewsRef}
+              className="flex h-full items-center gap-[6px] fourgot10-hide-on-small"
+            >
               <div
-                ref={accountNewsRef}
-                className="flex h-full items-center gap-[6px]"
-              >
-                <div
-                  data-fourgot10-nonpill="true"
-                  className="rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] w-[142px] justify-between"
-                >
-                  <span className="text-[12.5px] tracking-[0.01em]">News</span>
-                  <span className="text-[12.5px] tracking-[0.01em]">0</span>
-                </div>
-                <div
-                  ref={accountBoxRef}
-                  data-fourgot10-nonpill="true"
-                  className="rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] w-[142px] justify-between"
-                >
-                  <span className="text-[12.5px] tracking-[0.01em]">
-                    Account
-                  </span>
-                  <span className="h-[18px] aspect-square rounded-[6px] bg-[#EFEFEF]" />
-                </div>
-              </div>
-              <div
-                ref={cartBoxRef}
                 data-fourgot10-nonpill="true"
                 className="rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] w-[142px] justify-between"
               >
-                <span className="text-[12.5px] tracking-[0.01em]">Cart</span>
-                <span className="text-[12.5px] tracking-[0.01em]">
-                  {cart?.items?.reduce((acc, item) => acc + item.quantity, 0) ||
-                    0}
-                </span>
+                <span className="text-[12.5px] tracking-[0.01em]">News</span>
+                <span className="text-[12.5px] tracking-[0.01em]">0</span>
               </div>
+              <div
+                ref={accountBoxRef}
+                data-fourgot10-nonpill="true"
+                className="rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] w-[142px] justify-between"
+              >
+                <span className="text-[12.5px] tracking-[0.01em]">Account</span>
+                <span className="h-[18px] aspect-square rounded-[6px] bg-[#EFEFEF]" />
+              </div>
+            </div>
+            <div
+              ref={cartBoxRef}
+              data-fourgot10-nonpill="true"
+              className="rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] justify-between fourgot10-full-width-on-small"
+            >
+              <span className="text-[12.5px] tracking-[0.01em]">Cart</span>
+              <span className="text-[12.5px] tracking-[0.01em]">
+                {cart?.items?.reduce((acc, item) => acc + item.quantity, 0) ||
+                  0}
+              </span>
             </div>
           </div>
 

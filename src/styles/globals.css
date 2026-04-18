@@ -18,6 +18,25 @@
     scrollbar-width: none; /* Firefox */
   }
 
+  /* Hide elements on screens below 450px */
+  @media (max-width: 450px) {
+    .fourgot10-hide-on-small {
+      display: none !important;
+    }
+
+    .fourgot10-only-on-small {
+      display: inline-flex !important;
+    }
+
+    .fourgot10-full-width-on-small {
+      flex: 1 !important;
+    }
+  }
+
+  .fourgot10-only-on-small {
+    display: none;
+  }
+
   input:focus ~ label,
   input:not(:placeholder-shown) ~ label {
     @apply -translate-y-2 text-xsmall-regular;

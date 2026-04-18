@@ -55,6 +55,7 @@ export default function HoverModal({
   const [isOpen, setIsOpen] = useState(false)
   const [shouldRender, setShouldRender] = useState(false)
   const isOpenRef = useRef(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [position, setPosition] = useState<{
     top: number
     left: number
@@ -78,8 +79,23 @@ export default function HoverModal({
     isOpenRef.current = isOpen
   }, [isOpen])
 
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 450px)")
+    const update = () => setIsMobile(mq.matches)
+
+    update()
+    mq.addEventListener("change", update)
+
+    return () => mq.removeEventListener("change", update)
+  }, [])
+
   const updatePosition = () => {
     if (!triggerRef.current) return
+
+    if (isMobile) {
+      setPosition({ top: 0, left: 0 })
+      return
+    }
 
     const rect = triggerRef.current.getBoundingClientRect()
     const modalWidth = 350
@@ -128,14 +144,18 @@ export default function HoverModal({
     const trigger = triggerRef.current
     if (!trigger) return
 
+    const resolvedTriggerType: "hover" | "click" = isMobile
+      ? "click"
+      : triggerType
+
     const onTriggerEnter = () => {
-      if (triggerType !== "hover") return
+      if (resolvedTriggerType !== "hover") return
       isOverTriggerRef.current = true
       openModal()
     }
 
     const onTriggerLeave = (e: MouseEvent) => {
-      if (triggerType !== "hover") return
+      if (resolvedTriggerType !== "hover") return
 
       isOverTriggerRef.current = false
 
@@ -152,17 +172,17 @@ export default function HoverModal({
     }
 
     const onTriggerClick = () => {
-      if (triggerType !== "click") return
+      if (resolvedTriggerType !== "click") return
       updatePosition()
       setIsOpen((prev) => !prev)
     }
 
-    if (triggerType === "hover") {
+    if (resolvedTriggerType === "hover") {
       trigger.addEventListener("mouseenter", onTriggerEnter)
       trigger.addEventListener("mouseleave", onTriggerLeave)
     }
 
-    if (triggerType === "click") {
+    if (resolvedTriggerType === "click") {
       trigger.addEventListener("click", onTriggerClick)
     }
 
@@ -179,12 +199,12 @@ export default function HoverModal({
     window.addEventListener("resize", handleScroll)
 
     return () => {
-      if (triggerType === "hover") {
+      if (resolvedTriggerType === "hover") {
         trigger.removeEventListener("mouseenter", onTriggerEnter)
         trigger.removeEventListener("mouseleave", onTriggerLeave)
       }
 
-      if (triggerType === "click") {
+      if (resolvedTriggerType === "click") {
         trigger.removeEventListener("click", onTriggerClick)
       }
 
@@ -196,7 +216,20 @@ export default function HoverModal({
 
       clearCloseTimeout()
     }
-  }, [triggerRef, triggerType, isOpen, topOffset])
+  }, [triggerRef, triggerType, isOpen, topOffset, isMobile])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false)
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [isOpen])
 
   useEffect(() => {
     if (!modalRef.current) return
@@ -260,12 +293,14 @@ export default function HoverModal({
   if (!shouldRender || !position) return null
 
   const handleModalMouseEnter = () => {
+    if (isMobile) return
     if (triggerType !== "hover") return
     isOverModalRef.current = true
     clearCloseTimeout()
   }
 
   const handleModalMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isMobile) return
     if (triggerType !== "hover") return
 
     isOverModalRef.current = false
@@ -280,6 +315,34 @@ export default function HoverModal({
     }
 
     scheduleClose()
+  }
+
+  if (isMobile) {
+    return (
+      <div className="fixed  inset-0 z-50">
+        <div
+          className="absolute   inset-0 bg-black/10"
+          style={{ backdropFilter: "blur(8px)" }}
+          onClick={() => setIsOpen(false)}
+        />
+        <div
+          ref={modalRef}
+          className={`absolute p-[10px] inset-0 w-full h-full overflow-auto ${className}`}
+          onClickCapture={(e) => {
+            const target = e.target
+            if (
+              target instanceof Element &&
+              (target.closest("a") ||
+                target.closest('[data-hovermodal-close="true"]'))
+            ) {
+              setIsOpen(false)
+            }
+          }}
+        >
+          {modalContent}
+        </div>
+      </div>
+    )
   }
 
   return (

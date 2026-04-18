@@ -402,10 +402,10 @@ export default function FourGotTenMenu1({
                 className="h-[26px] rounded-full bg-[#F1F1F1] px-[15px] text-[10px] tracking-[0.01em] text-black/70 flex items-center gap-[8px]"
                 type="button"
               >
-                <span className="text-black">
+                <span className="text-black fourgot10-hide-on-small">
                   {currentCountry?.label ?? ""}
                 </span>
-                <span className="h-[8px] w-[1px] bg-black/20" />
+                <span className="h-[8px] w-[1px] bg-black/20 fourgot10-hide-on-small" />
                 <span className="text-black">
                   {(countryCode ?? "").toUpperCase()}
                 </span>
