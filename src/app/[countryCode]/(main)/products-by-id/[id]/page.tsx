@@ -2,15 +2,6 @@ import { notFound } from "next/navigation"
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
 import { HttpTypes } from "@medusajs/types"
-import { Suspense } from "react"
-import ImageGallery from "@modules/products/components/image-gallery"
-import ProductActions from "@modules/products/components/product-actions"
-import ProductOnboardingCta from "@modules/products/components/product-onboarding-cta"
-import ProductTabs from "@modules/products/components/product-tabs"
-import RelatedProducts from "@modules/products/components/related-products"
-import ProductInfo from "@modules/products/templates/product-info"
-import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
-import ProductActionsWrapper from "@modules/products/templates/product-actions-wrapper"
 import DeskScene from "@modules/desk/components/desk-scene"
 
 type Props = {
@@ -69,14 +60,6 @@ export default async function ProductByIdPage(props: Props) {
         </div>
       </div>
       <div className="flex w-full h-[500px] bg-white rounded-[12px]"></div>
-      <div
-        className="content-container my-16 small:my-32"
-        data-testid="related-products-container"
-      >
-        <Suspense fallback={<SkeletonRelatedProducts />}>
-          <RelatedProducts product={product} countryCode={params.countryCode} />
-        </Suspense>
-      </div>
     </div>
   )
 }
