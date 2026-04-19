@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import gsap from "gsap"
 import type { ReactNode, RefObject } from "react"
+import { MOBILE_MAX_WIDTH } from "@lib/breakpoints"
 
 interface HoverModalProps {
   triggerRef: RefObject<HTMLElement>
@@ -80,7 +81,7 @@ export default function HoverModal({
   }, [isOpen])
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 450px)")
+    const mq = window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`)
     const update = () => setIsMobile(mq.matches)
 
     update()

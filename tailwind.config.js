@@ -1,4 +1,5 @@
 const path = require("path")
+const { MOBILE_MAX_WIDTH } = require("./src/lib/breakpoints")
 
 module.exports = {
   darkMode: "class",
@@ -47,6 +48,12 @@ module.exports = {
         "8xl": "100rem",
       },
       screens: {
+        phone: `${MOBILE_MAX_WIDTH}px`,
+        tablet: "768px",
+        laptop: "1024px",
+        desktop: "1280px",
+        wide: "1440px",
+        ultrawide: "1680px",
         "3xsmall": "450px",
         "2xsmall": "320px",
         xsmall: "512px",

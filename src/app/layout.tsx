@@ -20,12 +20,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en" data-mode="light">
       <body className="bg-white">
-        <div className="p-[12px]">
+        <div className="p-[8px] phone:p-[12px]">
           <div className="min-h-screen relative w-full flex flex-col">
-            <div className="border-white border-[12px] fixed inset-0 z-10 pointer-events-none"></div>
+            <div className="border-white phone:border-[12px] border-[8px] fixed inset-0 z-10 pointer-events-none"></div>
             <div className="bg-gradient-to-t from-[#efefef] to-transparent h-[50px] w-full fixed bottom-0 z-10 pointer-events-none"></div>
 
-            <div className="border-white border-[12px] rounded-[22px] fixed inset-0 z-10 pointer-events-none"></div>
+            <div className="border-white phone:border-[12px] border-[8px] rounded-[22px] fixed inset-0 z-10 pointer-events-none"></div>
             <main className="relative bg-white">
               <FourGotTenMenu1 regions={regions} />
 

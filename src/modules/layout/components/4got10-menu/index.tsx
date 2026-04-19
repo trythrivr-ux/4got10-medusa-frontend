@@ -8,6 +8,7 @@ import { HttpTypes } from "@medusajs/types"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { updateRegion, updateLineItem, deleteLineItem } from "@lib/data/cart"
 import HoverModal, { ModalB } from "@modules/common/components/hover-modal"
+import { MOBILE_MAX_WIDTH } from "@lib/breakpoints"
 import Link from "next/link"
 
 const Pill = ({
@@ -180,7 +181,7 @@ export default function FourGotTenMenu({
   }, [])
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 450px)")
+    const mq = window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`)
     const update = () => setIsSmallScreen(mq.matches)
 
     update()
@@ -239,6 +240,10 @@ export default function FourGotTenMenu({
       "[data-fourgot10-nonpill='true']"
     )
 
+    const logoEls = [logoLeftRef.current, logoRightRef.current].filter(
+      Boolean
+    ) as HTMLElement[]
+
     const stuckWidth = 675
     const stuckButtonWidth = 110
 
@@ -272,6 +277,18 @@ export default function FourGotTenMenu({
     tlRef.current = tl
 
     if (isMenuExpanded) {
+      if (isSmallScreen) {
+        if (logoEls.length) {
+          tl.set(
+            logoEls,
+            {
+              opacity: 0,
+            },
+            0
+          )
+        }
+      }
+
       tl.to(
         inner,
         {
@@ -358,7 +375,7 @@ export default function FourGotTenMenu({
       )
 
       tl.to(
-        [logoLeftRef.current, logoRightRef.current],
+        logoEls,
         {
           opacity: 0,
           x: (i) => (i === 0 ? -60 : 60),
@@ -434,14 +451,26 @@ export default function FourGotTenMenu({
         0.4
       )
     } else if (isStuck && !isMenuExpanded) {
+      if (isSmallScreen) {
+        if (logoEls.length) {
+          tl.set(
+            logoEls,
+            {
+              opacity: 0,
+            },
+            0
+          )
+        }
+      }
+
       tl.to(
         inner,
         {
-          backgroundColor: "#FFFFFF",
-          paddingTop: 8,
-          paddingBottom: 8,
-          paddingLeft: 8,
-          paddingRight: 8,
+          backgroundColor: isSmallScreen ? "transparent" : "#FFFFFF",
+          paddingTop: isSmallScreen ? 0 : 8,
+          paddingBottom: isSmallScreen ? 0 : 8,
+          paddingLeft: isSmallScreen ? 0 : 8,
+          paddingRight: isSmallScreen ? 0 : 8,
           duration: 0.25,
         },
         0
@@ -461,7 +490,7 @@ export default function FourGotTenMenu({
           paddingTop: 8,
         },
         {
-          paddingTop: 22,
+          paddingTop: isSmallScreen ? 16 : 22,
           duration: 0.25,
         },
         0
@@ -594,21 +623,25 @@ export default function FourGotTenMenu({
       tl.to(
         nonPillButtons,
         {
-          backgroundColor: "#EFEFEF",
+          backgroundColor: isSmallScreen ? "#FFFFFF" : "#EFEFEF",
           duration: 0.35,
         },
         0
       )
 
-      tl.to(
-        [logoLeftRef.current, logoRightRef.current],
-        {
-          opacity: isSmallScreen ? 0 : 1,
-          x: 0,
-          duration: 0.28,
-        },
-        0.34
-      )
+      if (!isSmallScreen) {
+        if (logoEls.length) {
+          tl.to(
+            logoEls,
+            {
+              opacity: 1,
+              x: 0,
+              duration: 0.28,
+            },
+            0.34
+          )
+        }
+      }
     } else {
       tl.to(
         inner,
@@ -634,7 +667,7 @@ export default function FourGotTenMenu({
       )
 
       tl.set(
-        [logoLeftRef.current, logoRightRef.current],
+        logoEls,
         {
           clearProps: "opacity",
         },
@@ -706,15 +739,17 @@ export default function FourGotTenMenu({
         0
       )
 
-      tl.to(
-        [logoLeftRef.current, logoRightRef.current],
-        {
-          opacity: 0,
-          x: (i) => (i === 0 ? -60 : 60),
-          duration: 0.18,
-        },
-        0
-      )
+      if (logoEls.length) {
+        tl.to(
+          logoEls,
+          {
+            opacity: 0,
+            x: (i) => (i === 0 ? -60 : 60),
+            duration: 0.18,
+          },
+          0
+        )
+      }
 
       tl.to(
         inner,
@@ -780,8 +815,8 @@ export default function FourGotTenMenu({
         ref={stickyOuterRef}
         className={`sticky rounded-[12px] items-center z-50 pt-[22px] ${
           isMenuExpanded
-            ? "top-[12px] px-[12px] w-full"
-            : "top-0 px-[12px] mt-[12px] w-full"
+            ? "top-[12px] px-[8px] phone:px-[12px] w-full"
+            : "top-0 px-[9.5px] phone:px-[12px] mt-[9.5px] phone:mt-[12px] w-full"
         }`}
       >
         <div
@@ -789,58 +824,64 @@ export default function FourGotTenMenu({
             isMenuExpanded ? "hidden" : ""
           }`}
         ></div>
-        <div
-          ref={logoLeftRef}
-          className="pointer-events-none  pt-[10px] select-none absolute left-[12px] top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]"
-        >
-          <Image
-            src="/menu-icons/4got10-2/4G.svg"
-            alt=""
-            width={100}
-            height={100}
-            className="w-fit max-h-[39px] pr-[6px]"
-          />
-          <Image
-            src="/menu-icons/4got10-2/O.svg"
-            alt=""
-            width={100}
-            height={100}
-            className="w-fit max-h-[39px] pr-[6px]"
-          />
-          <Image
-            src="/menu-icons/4got10-2/T10.svg"
-            alt=""
-            width={100}
-            height={100}
-            className="w-fit max-h-[39px] pr-[6px]"
-          />
-        </div>
+        {!isSmallScreen && (
+          <div
+            ref={logoLeftRef}
+            className="pointer-events-none  pt-[10px] select-none absolute left-[12px] top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]"
+          >
+            <Image
+              src="/menu-icons/4got10-2/4G.svg"
+              alt=""
+              width={100}
+              height={100}
+              className="w-fit max-h-[39px] pr-[6px]"
+            />
+            <Image
+              src="/menu-icons/4got10-2/O.svg"
+              alt=""
+              width={100}
+              height={100}
+              className="w-fit max-h-[39px] pr-[6px]"
+            />
+            <Image
+              src="/menu-icons/4got10-2/T10.svg"
+              alt=""
+              width={100}
+              height={100}
+              className="w-fit max-h-[39px] pr-[6px]"
+            />
+          </div>
+        )}
 
-        <div
-          ref={logoRightRef}
-          className="pointer-events-none pt-[10px] select-none absolute right-[5px] top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]"
-        >
-          <Image
-            src="/menu-icons/4got10-2/MA.svg"
-            alt=""
-            width={100}
-            height={100}
-            className="w-fit max-h-[39px] pr-[4px]"
-          />
-          <Image
-            src="/menu-icons/4got10-2/G.svg"
-            alt=""
-            width={100}
-            height={100}
-            className="w-fit max-h-[39px] pr-[6px]"
-          />
-        </div>
+        {!isSmallScreen && (
+          <div
+            ref={logoRightRef}
+            className="pointer-events-none pt-[10px] select-none absolute right-[5px] top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]"
+          >
+            <Image
+              src="/menu-icons/4got10-2/MA.svg"
+              alt=""
+              width={100}
+              height={100}
+              className="w-fit max-h-[39px] pr-[4px]"
+            />
+            <Image
+              src="/menu-icons/4got10-2/G.svg"
+              alt=""
+              width={100}
+              height={100}
+              className="w-fit max-h-[39px] pr-[6px]"
+            />
+          </div>
+        )}
 
         <div
           ref={stickyInnerRef}
           className={`relative rounded-[12px] py-[0px] px-[0px] flex flex-col mx-auto will-change-[width] ${
             isStuck || isMenuExpanded
-              ? "shadow-[0_0_30px_rgba(239,239,239)]"
+              ? isSmallScreen && isStuck && !isMenuExpanded
+                ? ""
+                : "shadow-[0_0_30px_rgba(239,239,239)]"
               : ""
           }`}
         >
@@ -853,7 +894,11 @@ export default function FourGotTenMenu({
               ref={menuBoxRef}
               data-fourgot10-nonpill="true"
               onClick={() => setIsMenuExpanded((v) => !v)}
-              className="flex-1 h-full rounded-[10px] bg-[#FFFFFF]  px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small"
+              className={`flex-1 h-full rounded-[10px] bg-[#FFFFFF]  px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small ${
+                isSmallScreen && isStuck && !isMenuExpanded
+                  ? "shadow-[0_0_30px_rgba(239,239,239)]"
+                  : ""
+              }`}
             >
               <div className="text-[12.5px] tracking-[0.01em]">Menu</div>
               <div className="flex items-center gap-[6px]">
@@ -903,7 +948,11 @@ export default function FourGotTenMenu({
             <div
               ref={cartBoxRef}
               data-fourgot10-nonpill="true"
-              className="rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] justify-between fourgot10-full-width-on-small"
+              className={`rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] justify-between fourgot10-full-width-on-small ${
+                isSmallScreen && isStuck && !isMenuExpanded
+                  ? "shadow-[0_0_30px_rgba(239,239,239)]"
+                  : ""
+              }`}
             >
               <span className="text-[12.5px] tracking-[0.01em]">Cart</span>
               <span className="text-[12.5px] tracking-[0.01em]">
