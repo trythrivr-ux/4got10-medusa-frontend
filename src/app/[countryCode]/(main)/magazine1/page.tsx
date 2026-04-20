@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 import * as THREE from "three"
 import { sdk } from "@/lib/config"
+import { useCustomLayout } from "@/context/custom-layout-context"
 
 const MAX_CARD_WIDTH = 560
 const CARD_ASPECT_RATIO = 3 / 4
 const NUM_CARDS = 30
 const CAMERA_FOV_DEG = 45
 const CAMERA_Z = 14
-const FRONT_CARD_SCREEN_FILL = 0.65
+const FRONT_CARD_SCREEN_FILL = 0.7
 
 function getFullImageUrl(url: string | undefined): string | undefined {
   if (!url) return undefined
@@ -41,9 +42,15 @@ const initialCards: Card[] = Array.from({ length: NUM_CARDS }, (_, i) => ({
 
 export default function Magazine1Page() {
   const { countryCode } = useParams<{ countryCode: string }>()
+  const { setCustomLayout } = useCustomLayout()
 
   const [cards, setCards] = useState<Card[]>(initialCards)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setCustomLayout(true)
+    return () => setCustomLayout(false)
+  }, [setCustomLayout])
   const sceneRef = useRef<THREE.Scene | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
@@ -52,6 +59,11 @@ export default function Magazine1Page() {
   const targetRotationRef = useRef(0)
   const isScrollingRef = useRef(false)
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const frontCardIndexRef = useRef(-1)
+  const popOffsetRef = useRef(0)
+  const spacingOffsetRef = useRef(0)
+  const cardPopOffsetsRef = useRef<number[]>([])
+  const cardSpacingOffsetsRef = useRef<number[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -235,10 +247,23 @@ export default function Magazine1Page() {
       rotationRef.current +=
         (targetRotationRef.current - rotationRef.current) * 0.1
 
+      // Smooth pop offset animation (always active for front card)
+      const targetPopOffset = 0.5
+      popOffsetRef.current += (targetPopOffset - popOffsetRef.current) * 0.1
+
+      // Smooth spacing offset animation (when not scrolling)
+      const targetSpacingOffset = !isScrollingRef.current ? 0.5 : 0
+      spacingOffsetRef.current +=
+        (targetSpacingOffset - spacingOffsetRef.current) * 0.1
+
       // Normalize rotation to keep it within reasonable bounds for infinite scroll
       const rotationPerCard = (Math.PI * 2) / NUM_CARDS
       const totalRotation = rotationRef.current
       const normalizedRotation = totalRotation % (Math.PI * 2)
+
+      // Track which card is at the front (highest z position)
+      let maxZ = -Infinity
+      let frontCardIdx = -1
 
       // Manually update each card's position to create orbital motion
       // Cards rotate to face the center of the circle
@@ -251,7 +276,55 @@ export default function Magazine1Page() {
           Math.cos(currentAngle) * circleRadiusRef.current + yOffset
         mesh.position.z = Math.sin(currentAngle) * circleRadiusRef.current
         mesh.visible = mesh.position.z >= 0
-        mesh.lookAt(0, 12, 0)
+        mesh.lookAt(0, 3, 0)
+
+        // Track front card
+        if (mesh.position.z > maxZ) {
+          maxZ = mesh.position.z
+          frontCardIdx = i
+        }
+      })
+
+      frontCardIndexRef.current = frontCardIdx
+
+      // Initialize per-card offset arrays if needed
+      if (cardPopOffsetsRef.current.length !== NUM_CARDS) {
+        cardPopOffsetsRef.current = Array(NUM_CARDS).fill(0)
+      }
+      if (cardSpacingOffsetsRef.current.length !== NUM_CARDS) {
+        cardSpacingOffsetsRef.current = Array(NUM_CARDS).fill(0)
+      }
+
+      // Animate per-card offsets smoothly
+      const numCardsToSpace = 5
+      for (let i = 0; i < NUM_CARDS; i++) {
+        // Calculate target pop offset (1 for front card, 0 for others)
+        const targetPopOffset = i === frontCardIdx ? popOffsetRef.current : 0
+        cardPopOffsetsRef.current[i] +=
+          (targetPopOffset - cardPopOffsetsRef.current[i]) * 0.1
+
+        // Calculate target spacing offset for cards after front card
+        let targetSpacingOffset = 0
+        if (i !== frontCardIdx) {
+          const offset = (i - frontCardIdx + NUM_CARDS) % NUM_CARDS
+          if (offset <= numCardsToSpace && offset > 0) {
+            targetSpacingOffset =
+              spacingOffsetRef.current * (1 - (offset - 1) / numCardsToSpace)
+          }
+        }
+        cardSpacingOffsetsRef.current[i] +=
+          (targetSpacingOffset - cardSpacingOffsetsRef.current[i]) * 0.1
+      }
+
+      // Apply per-card offsets to positions
+      cardMeshes.forEach((mesh, i) => {
+        mesh.position.y += cardPopOffsetsRef.current[i]
+        mesh.position.y -= cardSpacingOffsetsRef.current[i]
+      })
+
+      // Reset scale for other cards
+      cardMeshes.forEach((mesh, i) => {
+        mesh.scale.set(1, 1, 1)
       })
 
       renderer.render(scene, camera)
@@ -297,8 +370,11 @@ export default function Magazine1Page() {
         const nearestCardIndex = Math.round(currentRotation / rotationPerCard)
         const snappedRotation = nearestCardIndex * rotationPerCard
 
-        targetRotationRef.current = snappedRotation
-      }, 150)
+        // Offset by rotationPerCard/2 to center the card at z=0 instead of at the front of the circle
+        const centeredRotation = snappedRotation - rotationPerCard / 2
+
+        targetRotationRef.current = centeredRotation
+      }, 500)
     }
 
     container.addEventListener("wheel", handleScroll)
@@ -323,9 +399,9 @@ export default function Magazine1Page() {
   }, [cards])
 
   return (
-    <div className="h-[calc(100vh-200px)] relative w-full">
+    <div className="h-screen relative w-full">
       <div
-        className="absolute top-0 left-0 right-0 h-[100px] pointer-events-none"
+        className="absolute top-0 left-0 right-0 h-[50px] pointer-events-none"
         style={{
           background:
             "linear-gradient(to bottom, #efefef 0%, transparent 100%)",
@@ -333,6 +409,13 @@ export default function Magazine1Page() {
         }}
       />
       <div ref={containerRef} className="w-full h-full" />
+      <div
+        className="absolute -mb-[2px] bottom-0 left-0 right-0 h-[50px] pointer-events-none"
+        style={{
+          background: "linear-gradient(to top, #efefef 0%, transparent 100%)",
+          zIndex: 20,
+        }}
+      />
     </div>
   )
 }
