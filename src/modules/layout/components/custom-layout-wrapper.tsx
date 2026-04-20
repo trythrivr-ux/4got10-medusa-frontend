@@ -21,6 +21,7 @@ export default function CustomLayoutWrapper({
       <div className="bg-gradient-to-t from-[#efefef] to-transparent h-[50px] w-full fixed bottom-0 z-10 pointer-events-none"></div>
 
       <div className="border-white phone:border-[12px] border-[8px] rounded-[22px] fixed inset-0 z-10 pointer-events-none"></div>
+      <div className="border-white phone:border-[12px] border-[8px] rounded-[14px] fixed inset-0 z-10 pointer-events-none"></div>
       <main className="relative bg-white">
         {!customLayout && <FourGotTenMenu1 regions={regions} />}
 

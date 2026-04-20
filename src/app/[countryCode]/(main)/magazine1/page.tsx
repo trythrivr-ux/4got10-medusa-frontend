@@ -377,13 +377,54 @@ export default function Magazine1Page() {
       }, 500)
     }
 
+    // Handle touch events for mobile
+    let touchStartY = 0
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      isScrollingRef.current = true
+      const touchY = e.touches[0].clientY
+      const deltaY = touchStartY - touchY
+      targetRotationRef.current += deltaY * 0.005
+      touchStartY = touchY
+
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+
+      // Set timeout to detect when scrolling stops
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false
+
+        // Calculate nearest card to center
+        const rotationPerCard = (Math.PI * 2) / NUM_CARDS
+        const currentRotation = targetRotationRef.current
+        const nearestCardIndex = Math.round(currentRotation / rotationPerCard)
+        const snappedRotation = nearestCardIndex * rotationPerCard
+
+        // Offset by rotationPerCard/2 to center the card at z=0 instead of at the front of the circle
+        const centeredRotation = snappedRotation - rotationPerCard / 2
+
+        targetRotationRef.current = centeredRotation
+      }, 500)
+    }
+
     container.addEventListener("wheel", handleScroll)
+    container.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    })
+    container.addEventListener("touchmove", handleTouchMove, { passive: true })
 
     // Cleanup
     return () => {
       ro.disconnect()
       window.removeEventListener("resize", handleResize)
       container.removeEventListener("wheel", handleScroll)
+      container.removeEventListener("touchstart", handleTouchStart)
+      container.removeEventListener("touchmove", handleTouchMove)
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current)
       }
