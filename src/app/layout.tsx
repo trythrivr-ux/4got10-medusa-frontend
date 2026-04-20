@@ -32,7 +32,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
               <div className="bg-[#efefef] pb-[12px] rounded-[12px]">
                 <FourGotTenMenu regions={regions} cart={cart} />
                 {props.children}
-                <div className="px-[12px] pt-[12px]">
+                <div className="px-[12px] hidden pt-[12px]">
                   <div className="flex rounded-[12px] bg-white h-[150px]"></div>
                 </div>
               </div>
