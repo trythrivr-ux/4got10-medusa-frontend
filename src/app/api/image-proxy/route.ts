@@ -6,7 +6,7 @@ export async function OPTIONS(request: NextRequest) {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Origin, Accept",
     },
   })
 }
@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      headers: {
+        // Forward origin to satisfy some storage/CDN CORS configurations
+        Origin: request.headers.get("origin") ?? "",
+      },
+    })
 
     if (!response.ok) {
       return NextResponse.json(
@@ -40,7 +45,9 @@ export async function GET(request: NextRequest) {
         "Cache-Control": "public, max-age=31536000, immutable",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Content-Type, Origin, Accept",
+        // Allow cross-origin image usage inside WebGL contexts
+        "Cross-Origin-Resource-Policy": "cross-origin",
       },
     })
   } catch (error) {

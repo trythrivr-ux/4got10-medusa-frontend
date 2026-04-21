@@ -23,8 +23,15 @@ function getFullImageUrl(url: string | undefined): string | undefined {
       ? url
       : `${backend}${url.startsWith("/") ? "" : "/"}${url}`
 
+  let normalizedAbsolute = absolute
+  try {
+    normalizedAbsolute = decodeURIComponent(absolute)
+  } catch {
+    // ignore
+  }
+
   // Always proxy images to avoid CORS issues with WebGL texture loading.
-  return `/api/image-proxy?url=${encodeURIComponent(absolute)}`
+  return `/api/image-proxy?url=${encodeURIComponent(normalizedAbsolute)}`
 }
 
 interface Card {
