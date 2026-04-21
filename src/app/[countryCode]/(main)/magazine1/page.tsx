@@ -353,7 +353,7 @@ export default function Magazine1Page() {
     // Handle scroll
     const handleScroll = (e: WheelEvent) => {
       isScrollingRef.current = true
-      targetRotationRef.current += e.deltaY * 0.002
+      targetRotationRef.current -= e.deltaY * 0.002
 
       // Clear existing timeout
       if (scrollTimeoutRef.current) {
@@ -387,7 +387,7 @@ export default function Magazine1Page() {
       isScrollingRef.current = true
       const touchY = e.touches[0].clientY
       const deltaY = touchStartY - touchY
-      targetRotationRef.current += deltaY * 0.005
+      targetRotationRef.current -= deltaY * 0.005
       touchStartY = touchY
 
       // Clear existing timeout
