@@ -46,7 +46,11 @@ export default function CustomLayoutWrapper({
       <div className="border-white phone:border-[12px] border-[8px] rounded-[14px] fixed inset-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
       <div className="bg-gradient-to-t from-[#efefef] to-transparent h-[50px] w-full fixed bottom-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
 
-      <main className="relative  bg-white">
+      <main
+        className={`relative bg-white ${
+          customLayout ? "pt-[env(safe-area-inset-top)]" : ""
+        }`}
+      >
         {!customLayout && <FourGotTenMenu1 regions={regions} />}
 
         <div
