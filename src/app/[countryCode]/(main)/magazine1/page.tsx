@@ -219,6 +219,8 @@ export default function Magazine1Page() {
           card.imageUrl,
           (texture) => {
             texture.colorSpace = THREE.SRGBColorSpace
+            texture.center.set(0.5, 0.5)
+            texture.repeat.x = -1
             material.map = texture
             material.color = new THREE.Color(0xffffff)
             material.needsUpdate = true
