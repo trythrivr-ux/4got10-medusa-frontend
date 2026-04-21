@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import * as THREE from "three"
 import { sdk } from "@/lib/config"
 import { useCustomLayout } from "@/context/custom-layout-context"
+import { addToCart } from "@lib/data/cart"
 
 const MAX_CARD_WIDTH = 560
 const CARD_ASPECT_RATIO = 3 / 4
@@ -39,6 +40,8 @@ interface Card {
   title: string
   color: string
   imageUrl?: string
+  productId?: string
+  variantId?: string
 }
 
 const initialCards: Card[] = Array.from({ length: NUM_CARDS }, (_, i) => ({
@@ -50,9 +53,35 @@ const initialCards: Card[] = Array.from({ length: NUM_CARDS }, (_, i) => ({
 export default function Magazine1Page() {
   const { countryCode } = useParams<{ countryCode: string }>()
   const { setCustomLayout } = useCustomLayout()
+  const router = useRouter()
 
   const [cards, setCards] = useState<Card[]>(initialCards)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [showAddToCart, setShowAddToCart] = useState(false)
+  const [currentProduct, setCurrentProduct] = useState<Card | null>(null)
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
+
+  const handleAddToCart = async () => {
+    if (!currentProduct?.variantId) {
+      return
+    }
+
+    setIsAddingToCart(true)
+    try {
+      await addToCart({
+        variantId: currentProduct.variantId,
+        quantity: 1,
+        countryCode,
+      })
+
+      window.dispatchEvent(new Event("cart-updated"))
+      router.refresh()
+    } catch (error) {
+      console.error("Failed to add to cart:", error)
+    } finally {
+      setIsAddingToCart(false)
+    }
+  }
 
   useEffect(() => {
     setCustomLayout(true)
@@ -71,6 +100,15 @@ export default function Magazine1Page() {
   const spacingOffsetRef = useRef(0)
   const cardPopOffsetsRef = useRef<number[]>([])
   const cardSpacingOffsetsRef = useRef<number[]>([])
+
+  useEffect(() => {
+    if (
+      frontCardIndexRef.current >= 0 &&
+      frontCardIndexRef.current < cards.length
+    ) {
+      setCurrentProduct(cards[frontCardIndexRef.current])
+    }
+  }, [frontCardIndexRef.current, cards])
 
   useEffect(() => {
     let cancelled = false
@@ -97,13 +135,15 @@ export default function Magazine1Page() {
             title: string
             thumbnail?: string | null
             images?: Array<{ url?: string | null }> | null
+            variants?: Array<{ id: string }> | null
           }>
         }>("/store/products", {
           method: "GET",
           query: {
             limit: 100,
             category_id: magazinesCategory.id,
-            fields: "id,title,thumbnail,*images,*images.url",
+            fields:
+              "id,title,thumbnail,*images,*images.url,*variants,*variants.id",
           },
           cache: "no-store",
         })
@@ -121,11 +161,14 @@ export default function Magazine1Page() {
         const nextCards: Card[] = Array.from({ length: NUM_CARDS }, (_, i) => {
           const url = fullImageUrls[i % fullImageUrls.length]
           const product = products[i % products.length]
+          const variant = product?.variants?.[0]
           return {
             id: `magazine-card-${i}`,
             title: product?.title || `Magazine ${i + 1}`,
             color: "#ffffff",
             imageUrl: url,
+            productId: product?.id,
+            variantId: variant?.id,
           }
         })
 
@@ -357,11 +400,16 @@ export default function Magazine1Page() {
     const ro = new ResizeObserver(handleResize)
     ro.observe(container)
 
-    window.addEventListener("resize", handleResize)
+    let touchStartY = 0
 
-    // Handle scroll
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY
+    }
+
     const handleScroll = (e: WheelEvent) => {
+      e.preventDefault()
       isScrollingRef.current = true
+      setShowAddToCart(false)
       targetRotationRef.current -= e.deltaY * 0.002
 
       // Clear existing timeout
@@ -372,6 +420,7 @@ export default function Magazine1Page() {
       // Set timeout to detect when scrolling stops
       scrollTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = false
+        setShowAddToCart(true)
 
         // Calculate nearest card to center
         const rotationPerCard = (Math.PI * 2) / NUM_CARDS
@@ -383,17 +432,12 @@ export default function Magazine1Page() {
         const centeredRotation = snappedRotation - rotationPerCard / 2
 
         targetRotationRef.current = centeredRotation
-      }, 500)
-    }
-
-    // Handle touch events for mobile
-    let touchStartY = 0
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY
+      }, 1000)
     }
 
     const handleTouchMove = (e: TouchEvent) => {
       isScrollingRef.current = true
+      setShowAddToCart(false)
       const touchY = e.touches[0].clientY
       const deltaY = touchStartY - touchY
       targetRotationRef.current -= deltaY * 0.005
@@ -407,6 +451,7 @@ export default function Magazine1Page() {
       // Set timeout to detect when scrolling stops
       scrollTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = false
+        setShowAddToCart(true)
 
         // Calculate nearest card to center
         const rotationPerCard = (Math.PI * 2) / NUM_CARDS
@@ -418,7 +463,7 @@ export default function Magazine1Page() {
         const centeredRotation = snappedRotation - rotationPerCard / 2
 
         targetRotationRef.current = centeredRotation
-      }, 500)
+      }, 1000)
     }
 
     container.addEventListener("wheel", handleScroll)
@@ -466,6 +511,23 @@ export default function Magazine1Page() {
           zIndex: 20,
         }}
       />
+      {showAddToCart && currentProduct && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-30 flex flex-col items-center gap-3 transition-opacity duration-300">
+          <p
+            className="text-lg font-semibold text-black font-sans"
+            style={{ fontFamily: "var(--font-jakarta)" }}
+          >
+            {currentProduct.title}
+          </p>
+          <button
+            onClick={handleAddToCart}
+            disabled={isAddingToCart}
+            className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isAddingToCart ? "Adding..." : "Add to Cart"}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

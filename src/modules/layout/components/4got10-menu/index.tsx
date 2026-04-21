@@ -1241,6 +1241,10 @@ export default function FourGotTenMenu({
                                       updateLineItem({
                                         lineId: item.id,
                                         quantity: item.quantity + 1,
+                                      }).then(() => {
+                                        window.dispatchEvent(
+                                          new Event("cart-updated")
+                                        )
                                       })
                                     }
                                     className={`rounded-[4px] mr-[2px] w-[10px] h-[10px] items-center flex justify-center text-[14px]`}
@@ -1267,6 +1271,10 @@ export default function FourGotTenMenu({
                                       updateLineItem({
                                         lineId: item.id,
                                         quantity: item.quantity + 1,
+                                      }).then(() => {
+                                        window.dispatchEvent(
+                                          new Event("cart-updated")
+                                        )
                                       })
                                     }
                                     className={`rounded-[4px] w-[10px] h-[10px] items-center flex justify-center text-[14px]`}
@@ -1281,7 +1289,13 @@ export default function FourGotTenMenu({
                                   </button>
                                 </div>
                                 <button
-                                  onClick={() => deleteLineItem(item.id)}
+                                  onClick={() =>
+                                    deleteLineItem(item.id).then(() => {
+                                      window.dispatchEvent(
+                                        new Event("cart-updated")
+                                      )
+                                    })
+                                  }
                                   className={`${
                                     isMenuExpanded
                                       ? "bg-[#ffffff]"

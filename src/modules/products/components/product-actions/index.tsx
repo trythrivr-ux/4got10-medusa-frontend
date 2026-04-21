@@ -132,6 +132,8 @@ export default function ProductActions({
       countryCode,
     })
 
+    window.dispatchEvent(new Event("cart-updated"))
+    router.refresh()
     setIsAdding(false)
   }
 

@@ -29,6 +29,31 @@ export default function FourGotTenMenu1({
 }: {
   regions: HttpTypes.StoreRegion[]
 }) {
+  const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const response = await fetch("/api/cart")
+        const data = await response.json()
+        setCart(data.cart || null)
+      } catch {
+        setCart(null)
+      }
+    }
+
+    fetchCart()
+
+    const handleCartUpdate = () => {
+      fetchCart()
+    }
+
+    window.addEventListener("cart-updated", handleCartUpdate)
+
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdate)
+    }
+  }, [])
   const triggerRef = useRef<HTMLDivElement | null>(null)
   const stickyOuterRef = useRef<HTMLDivElement | null>(null)
   const stickyInnerRef = useRef<HTMLDivElement | null>(null)

@@ -1,7 +1,8 @@
 "use client"
 
 import { useCustomLayout } from "@/context/custom-layout-context"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { HttpTypes } from "@medusajs/types"
 
 export default function CustomLayoutWrapper({
   children,
@@ -11,6 +12,31 @@ export default function CustomLayoutWrapper({
   regions: any[]
 }) {
   const { customLayout } = useCustomLayout()
+  const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const response = await fetch("/api/cart")
+        const data = await response.json()
+        setCart(data.cart || null)
+      } catch {
+        setCart(null)
+      }
+    }
+
+    fetchCart()
+
+    const handleCartUpdate = () => {
+      fetchCart()
+    }
+
+    window.addEventListener("cart-updated", handleCartUpdate)
+
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdate)
+    }
+  }, [])
 
   useEffect(() => {
     if (customLayout) {
@@ -58,7 +84,7 @@ export default function CustomLayoutWrapper({
             customLayout ? "px-[8px] pt-[8px]" : ""
           } bg-[#efefef] pb-[12px] rounded-[12px]`}
         >
-          <FourGotTenMenu regions={regions} cart={null} />
+          <FourGotTenMenu regions={regions} cart={cart} />
           {children}
           <div className="px-[12px] hidden pt-[12px]">
             <div className="flex rounded-[12px] bg-white h-[150px]"></div>
@@ -71,3 +97,4 @@ export default function CustomLayoutWrapper({
 
 import FourGotTenMenu1 from "@/modules/layout/components/top-menu"
 import FourGotTenMenu from "@modules/layout/components/4got10-menu"
+import { retrieveCart } from "@lib/data/cart"

@@ -32,6 +32,9 @@ const Item = ({ item, type = "full", currencyCode }: ItemProps) => {
       lineId: item.id,
       quantity,
     })
+      .then(() => {
+        window.dispatchEvent(new Event("cart-updated"))
+      })
       .catch((err) => {
         setError(err.message)
       })

@@ -16,9 +16,14 @@ const DeleteButton = ({
 
   const handleDelete = async (id: string) => {
     setIsDeleting(true)
-    await deleteLineItem(id).catch((err) => {
-      setIsDeleting(false)
-    })
+    await deleteLineItem(id)
+      .then(() => {
+        window.dispatchEvent(new Event("cart-updated"))
+      })
+      .catch((err) => {
+        setIsDeleting(false)
+      })
+    setIsDeleting(false)
   }
 
   return (

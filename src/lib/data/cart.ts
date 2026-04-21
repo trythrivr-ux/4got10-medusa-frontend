@@ -123,12 +123,6 @@ export async function addToCart({
   quantity: number
   countryCode: string
 }) {
-  console.log("addToCart called with:", { variantId, quantity, countryCode })
-  console.log(
-    "MEDUSA_BACKEND_URL:",
-    process.env.MEDUSA_BACKEND_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
-  )
-
   if (!variantId) {
     throw new Error("Missing variant ID when adding to cart")
   }
@@ -138,8 +132,6 @@ export async function addToCart({
   if (!cart) {
     throw new Error("Error retrieving or creating cart")
   }
-
-  console.log("Cart ID:", cart.id)
 
   const headers = {
     ...(await getAuthHeaders()),
@@ -156,17 +148,13 @@ export async function addToCart({
       headers
     )
     .then(async () => {
-      console.log("Added to cart successfully")
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
 
       const fulfillmentCacheTag = await getCacheTag("fulfillment")
       revalidateTag(fulfillmentCacheTag)
     })
-    .catch((error) => {
-      console.error("Error adding to cart:", error)
-      medusaError(error)
-    })
+    .catch(medusaError)
 }
 
 export async function updateLineItem({
