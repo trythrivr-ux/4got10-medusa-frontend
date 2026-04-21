@@ -1,6 +1,7 @@
 "use client"
 
 import { useCustomLayout } from "@/context/custom-layout-context"
+import { useEffect } from "react"
 
 export default function CustomLayoutWrapper({
   children,
@@ -10,6 +11,27 @@ export default function CustomLayoutWrapper({
   regions: any[]
 }) {
   const { customLayout } = useCustomLayout()
+
+  useEffect(() => {
+    if (customLayout) {
+      document.body.style.overscrollBehavior = "none"
+      document.body.style.touchAction = "none"
+      document.documentElement.style.overscrollBehavior = "none"
+      document.documentElement.style.touchAction = "none"
+    } else {
+      document.body.style.overscrollBehavior = ""
+      document.body.style.touchAction = ""
+      document.documentElement.style.overscrollBehavior = ""
+      document.documentElement.style.touchAction = ""
+    }
+
+    return () => {
+      document.body.style.overscrollBehavior = ""
+      document.body.style.touchAction = ""
+      document.documentElement.style.overscrollBehavior = ""
+      document.documentElement.style.touchAction = ""
+    }
+  }, [customLayout])
 
   return (
     <div
