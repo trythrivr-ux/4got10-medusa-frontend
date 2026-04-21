@@ -41,6 +41,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "4got10-production.up.railway.app",
+        pathname: "/files/**",
+      },
+      {
+        protocol: "https",
         hostname: "medusa-public-images.s3.eu-west-1.amazonaws.com",
       },
       {

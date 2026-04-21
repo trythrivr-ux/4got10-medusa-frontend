@@ -3,6 +3,7 @@ import Image from "next/image"
 import React from "react"
 
 import PlaceholderImage from "@modules/common/icons/placeholder-image"
+import { normalizeImageUrl } from "@lib/util/normalize-image-url"
 
 type ThumbnailProps = {
   thumbnail?: string | null
@@ -50,9 +51,11 @@ const ImageOrPlaceholder = ({
   image,
   size,
 }: Pick<ThumbnailProps, "size"> & { image?: string }) => {
+  const normalizedImage = normalizeImageUrl(image)
+
   return image ? (
     <Image
-      src={image}
+      src={normalizedImage || image}
       alt="Thumbnail"
       className="absolute inset-0 object-cover object-center"
       draggable={false}
