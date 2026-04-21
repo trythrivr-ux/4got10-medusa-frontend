@@ -13,8 +13,10 @@ export default function CustomLayoutWrapper({
 
   return (
     <div
-      className={`relative flex flex-col ${
-        customLayout ? "h-screen overflow-hidden" : "w-full min-h-screen"
+      className={` flex flex-col ${
+        customLayout
+          ? "h-screen w-screen fixed top-0 left-0 overflow-hidden touch-action-none overscroll-behavior-none"
+          : "relative w-full min-h-screen"
       }`}
     >
       <div className="border-white phone:border-[12px] border-[8px] fixed inset-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
@@ -22,10 +24,14 @@ export default function CustomLayoutWrapper({
       <div className="border-white phone:border-[12px] border-[8px] rounded-[14px] fixed inset-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
       <div className="bg-gradient-to-t from-[#efefef] to-transparent h-[50px] w-full fixed bottom-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
 
-      <main className="relative bg-white">
+      <main className="relative  bg-white">
         {!customLayout && <FourGotTenMenu1 regions={regions} />}
 
-        <div className="bg-[#efefef]  pb-[12px] rounded-[12px]">
+        <div
+          className={` ${
+            customLayout ? "px-[8px] pt-[8px]" : ""
+          } bg-[#efefef] pb-[12px] rounded-[12px]`}
+        >
           <FourGotTenMenu regions={regions} cart={null} />
           {children}
           <div className="px-[12px] hidden pt-[12px]">
