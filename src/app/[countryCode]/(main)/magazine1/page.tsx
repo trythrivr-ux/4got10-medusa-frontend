@@ -296,17 +296,18 @@ export default function Magazine1Page() {
       requestAnimationFrame(animate)
 
       // Smooth rotation interpolation
+      const rotationLerp = isScrollingRef.current ? 0.18 : 0.1
       rotationRef.current +=
-        (targetRotationRef.current - rotationRef.current) * 0.1
+        (targetRotationRef.current - rotationRef.current) * rotationLerp
 
       // Smooth pop offset animation (always active for front card)
       const targetPopOffset = 0.5
-      popOffsetRef.current += (targetPopOffset - popOffsetRef.current) * 0.1
+      popOffsetRef.current += (targetPopOffset - popOffsetRef.current) * 0.16
 
       // Smooth spacing offset animation (when not scrolling)
       const targetSpacingOffset = !isScrollingRef.current ? 0.5 : 0
       spacingOffsetRef.current +=
-        (targetSpacingOffset - spacingOffsetRef.current) * 0.1
+        (targetSpacingOffset - spacingOffsetRef.current) * 0.16
 
       // Normalize rotation to keep it within reasonable bounds for infinite scroll
       const rotationPerCard = (Math.PI * 2) / NUM_CARDS
@@ -353,7 +354,7 @@ export default function Magazine1Page() {
         // Calculate target pop offset (1 for front card, 0 for others)
         const targetPopOffset = i === frontCardIdx ? popOffsetRef.current : 0
         cardPopOffsetsRef.current[i] +=
-          (targetPopOffset - cardPopOffsetsRef.current[i]) * 0.1
+          (targetPopOffset - cardPopOffsetsRef.current[i]) * 0.16
 
         // Calculate target spacing offset for cards after front card
         let targetSpacingOffset = 0
@@ -365,7 +366,7 @@ export default function Magazine1Page() {
           }
         }
         cardSpacingOffsetsRef.current[i] +=
-          (targetSpacingOffset - cardSpacingOffsetsRef.current[i]) * 0.1
+          (targetSpacingOffset - cardSpacingOffsetsRef.current[i]) * 0.16
       }
 
       // Apply per-card offsets to positions
@@ -422,17 +423,27 @@ export default function Magazine1Page() {
         isScrollingRef.current = false
         setShowAddToCart(true)
 
-        // Calculate nearest card to center
-        const rotationPerCard = (Math.PI * 2) / NUM_CARDS
-        const currentRotation = targetRotationRef.current
-        const nearestCardIndex = Math.round(currentRotation / rotationPerCard)
-        const snappedRotation = nearestCardIndex * rotationPerCard
+        // Snap to the card that's visually most centered (front-most / highest z)
+        const frontIdx = frontCardIndexRef.current
+        if (frontIdx >= 0) {
+          const twoPi = Math.PI * 2
+          const baseAngle = (frontIdx / NUM_CARDS) * twoPi
+          // front-most happens when sin(baseAngle + normalizedRotation) is maximized (== 1)
+          const desiredNormalizedRotation = Math.PI / 2 - baseAngle
 
-        // Offset by rotationPerCard/2 to center the card at z=0 instead of at the front of the circle
-        const centeredRotation = snappedRotation - rotationPerCard / 2
+          const current = targetRotationRef.current
+          const currentNormalized = ((current % twoPi) + twoPi) % twoPi
+          const desiredNormalized =
+            ((desiredNormalizedRotation % twoPi) + twoPi) % twoPi
 
-        targetRotationRef.current = centeredRotation
-      }, 1000)
+          // shortest delta in range [-pi, pi]
+          let delta = desiredNormalized - currentNormalized
+          if (delta > Math.PI) delta -= twoPi
+          if (delta < -Math.PI) delta += twoPi
+
+          targetRotationRef.current = current + delta
+        }
+      }, 350)
     }
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -453,17 +464,27 @@ export default function Magazine1Page() {
         isScrollingRef.current = false
         setShowAddToCart(true)
 
-        // Calculate nearest card to center
-        const rotationPerCard = (Math.PI * 2) / NUM_CARDS
-        const currentRotation = targetRotationRef.current
-        const nearestCardIndex = Math.round(currentRotation / rotationPerCard)
-        const snappedRotation = nearestCardIndex * rotationPerCard
+        // Snap to the card that's visually most centered (front-most / highest z)
+        const frontIdx = frontCardIndexRef.current
+        if (frontIdx >= 0) {
+          const twoPi = Math.PI * 2
+          const baseAngle = (frontIdx / NUM_CARDS) * twoPi
+          // front-most happens when sin(baseAngle + normalizedRotation) is maximized (== 1)
+          const desiredNormalizedRotation = Math.PI / 2 - baseAngle
 
-        // Offset by rotationPerCard/2 to center the card at z=0 instead of at the front of the circle
-        const centeredRotation = snappedRotation - rotationPerCard / 2
+          const current = targetRotationRef.current
+          const currentNormalized = ((current % twoPi) + twoPi) % twoPi
+          const desiredNormalized =
+            ((desiredNormalizedRotation % twoPi) + twoPi) % twoPi
 
-        targetRotationRef.current = centeredRotation
-      }, 1000)
+          // shortest delta in range [-pi, pi]
+          let delta = desiredNormalized - currentNormalized
+          if (delta > Math.PI) delta -= twoPi
+          if (delta < -Math.PI) delta += twoPi
+
+          targetRotationRef.current = current + delta
+        }
+      }, 350)
     }
 
     container.addEventListener("wheel", handleScroll)
@@ -511,8 +532,14 @@ export default function Magazine1Page() {
           zIndex: 20,
         }}
       />
-      {showAddToCart && currentProduct && (
-        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-30 flex flex-col items-center gap-3 transition-opacity duration-300">
+      {currentProduct && (
+        <div
+          className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-30 flex flex-col items-center gap-3 transition-all duration-200 ease-out ${
+            showAddToCart
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 translate-y-3 pointer-events-none"
+          }`}
+        >
           <p
             className="text-lg font-semibold text-black font-sans"
             style={{ fontFamily: "var(--font-jakarta)" }}
