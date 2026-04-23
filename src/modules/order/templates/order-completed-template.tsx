@@ -1,4 +1,4 @@
-// import { Heading } from "@medusajs/ui" // Removed to prevent localStorage SSR errors
+import { Heading } from "@medusajs/ui"
 import { cookies as nextCookies } from "next/headers"
 
 import CartTotals from "@modules/common/components/cart-totals"

@@ -1130,7 +1130,11 @@ export default function FourGotTenMenu({
                     <div className="flex flex-col gap-[8px] mt-[8px] relative">
                       <div
                         ref={cartScrollRef}
-                        className="flex flex-col pb-[35px] gap-[8px] max-h-[500px] overflow-y-auto no-scrollbar"
+                        className={`flex flex-col ${
+                          (cart?.items?.length ?? 0) > 0
+                            ? "pb-[35px]"
+                            : "pb-[0px]"
+                        } gap-[8px] max-h-[500px] overflow-y-auto no-scrollbar`}
                         onScroll={() => {
                           if (cartScrollRef.current) {
                             setIsCartScrolling(
@@ -1139,47 +1143,18 @@ export default function FourGotTenMenu({
                           }
                         }}
                       >
-                        {cart?.items?.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex flex-row gap-[12px]"
-                          >
-                            {(item.thumbnail ||
-                              item.product?.thumbnail ||
-                              item.product?.images?.[0]?.url ||
-                              item.variant?.product?.images?.[0]?.url) && (
-                              <div
-                                className="relative w-[85px] h-[85px] border-[#efefef] border-[1.5px] rounded-[9px] overflow-hidden bg-[#efefef] shrink-0 cursor-pointer"
-                                onClick={() => {
-                                  if (item.product?.handle) {
-                                    router.push(
-                                      `/products/${item.product.handle}`
-                                    )
-                                  }
-                                }}
-                              >
-                                <Image
-                                  src={
-                                    item.thumbnail ||
-                                    item.product?.thumbnail ||
-                                    item.product?.images?.[0]?.url ||
-                                    item.variant?.product?.images?.[0]?.url ||
-                                    ""
-                                  }
-                                  alt={item.title || ""}
-                                  fill
-                                  sizes="85px"
-                                  className="object-cover"
-                                />
-                              </div>
-                            )}
-                            <div className="flex flex-col justify-center items-start gap-[6px]">
-                              <div className="flex flex-row items-center justify-center gap-[7px]">
-                                <span
-                                  className="text-[12.5px] font-medium truncate cursor-pointer"
-                                  style={{
-                                    fontFamily: "Plus Jakarta Sans, sans-serif",
-                                  }}
+                        {(cart?.items?.length ?? 0) > 0 ? (
+                          cart?.items?.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex flex-row gap-[12px]"
+                            >
+                              {(item.thumbnail ||
+                                item.product?.thumbnail ||
+                                item.product?.images?.[0]?.url ||
+                                item.variant?.product?.images?.[0]?.url) && (
+                                <div
+                                  className="relative w-[85px] h-[85px] border-[#efefef] border-[1.5px] rounded-[9px] overflow-hidden bg-[#efefef] shrink-0 cursor-pointer"
                                   onClick={() => {
                                     if (item.product?.handle) {
                                       router.push(
@@ -1188,134 +1163,180 @@ export default function FourGotTenMenu({
                                     }
                                   }}
                                 >
-                                  {item.title}
-                                </span>
-                                <div className="flex h-[12.5px] bg-[#00000030] w-[1.25px]"></div>
-                                <span
-                                  className="text-[12px] font-medium truncate"
-                                  style={{
-                                    fontFamily: "Plus Jakarta Sans, sans-serif",
-                                  }}
-                                >
-                                  {item.variant?.title ||
-                                    (item as any)?.variant_title ||
-                                    ""}
-                                </span>
-                              </div>
-                              <div className="flex flex-row items-center justify-center gap-[7px]">
-                                <span
-                                  className="text-[11.5px] text-[#00000070] font-medium truncate"
-                                  style={{
-                                    fontFamily: "Plus Jakarta Sans, sans-serif",
-                                  }}
-                                >
-                                  {item.variant?.title ||
-                                    (item as any)?.variant_title ||
-                                    ""}
-                                </span>
-                                <div className="flex h-[12.5px] bg-[#00000030] w-[1.25px]"></div>
-                                <span
-                                  className="text-[11.5px] text-[#00000070] font-medium truncate"
-                                  style={{
-                                    fontFamily: "Plus Jakarta Sans, sans-serif",
-                                  }}
-                                >
-                                  {new Intl.NumberFormat("en-US", {
-                                    style: "currency",
-                                    currency:
-                                      cart?.region?.currency_code || "USD",
-                                  }).format(item.unit_price / 100)}
-                                </span>
-                              </div>
-
-                              <div className="flex pt-[7px] flex-row gap-[7px]">
-                                <div
-                                  className={`${
-                                    isMenuExpanded
-                                      ? "bg-[#ffffff]"
-                                      : "bg-[#EFEFEF]"
-                                  }  tracking-[0px] flex gap-[6px]  flex-row items-center justify-center rounded-full px-[11px] h-[24px]`}
-                                >
-                                  <button
-                                    onClick={() =>
-                                      updateLineItem({
-                                        lineId: item.id,
-                                        quantity: item.quantity + 1,
-                                      }).then(() => {
-                                        window.dispatchEvent(
-                                          new Event("cart-updated")
-                                        )
-                                      })
+                                  <Image
+                                    src={
+                                      item.thumbnail ||
+                                      item.product?.thumbnail ||
+                                      item.product?.images?.[0]?.url ||
+                                      item.variant?.product?.images?.[0]?.url ||
+                                      ""
                                     }
-                                    className={`rounded-[4px] mr-[2px] w-[10px] h-[10px] items-center flex justify-center text-[14px]`}
+                                    alt={item.title || ""}
+                                    fill
+                                    sizes="85px"
+                                    className="object-cover"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex flex-col justify-center items-start gap-[6px]">
+                                <div className="flex flex-row items-center justify-center gap-[7px]">
+                                  <span
+                                    className="text-[12.5px] font-medium truncate cursor-pointer"
+                                    style={{
+                                      fontFamily:
+                                        "Plus Jakarta Sans, sans-serif",
+                                    }}
+                                    onClick={() => {
+                                      if (item.product?.handle) {
+                                        router.push(
+                                          `/products/${item.product.handle}`
+                                        )
+                                      }
+                                    }}
                                   >
-                                    <Image
-                                      alt=""
-                                      src={"/icons/plus.svg"}
-                                      className="w-[8.5px] opacity-[50%]"
-                                      height={50}
-                                      width={50}
-                                    />
-                                  </button>
-                                  <p
-                                    className="text-[10.5px] font-medium"
+                                    {item.title}
+                                  </span>
+                                  <div className="flex h-[12.5px] bg-[#00000030] w-[1.25px]"></div>
+                                  <span
+                                    className="text-[12px] font-medium truncate"
                                     style={{
                                       fontFamily:
                                         "Plus Jakarta Sans, sans-serif",
                                     }}
                                   >
-                                    {item.quantity}
-                                  </p>
+                                    {item.variant?.title ||
+                                      (item as any)?.variant_title ||
+                                      ""}
+                                  </span>
+                                </div>
+                                <div className="flex flex-row items-center justify-center gap-[7px]">
+                                  <span
+                                    className="text-[11.5px] text-[#00000070] font-medium truncate"
+                                    style={{
+                                      fontFamily:
+                                        "Plus Jakarta Sans, sans-serif",
+                                    }}
+                                  >
+                                    {item.variant?.title ||
+                                      (item as any)?.variant_title ||
+                                      ""}
+                                  </span>
+                                  <div className="flex h-[12.5px] bg-[#00000030] w-[1.25px]"></div>
+                                  <span
+                                    className="text-[11.5px] text-[#00000070] font-medium truncate"
+                                    style={{
+                                      fontFamily:
+                                        "Plus Jakarta Sans, sans-serif",
+                                    }}
+                                  >
+                                    {new Intl.NumberFormat("en-US", {
+                                      style: "currency",
+                                      currency:
+                                        cart?.region?.currency_code || "USD",
+                                    }).format(item.unit_price / 100)}
+                                  </span>
+                                </div>
+
+                                <div className="flex pt-[7px] flex-row gap-[7px]">
+                                  <div
+                                    className={`${
+                                      isMenuExpanded
+                                        ? "bg-[#ffffff]"
+                                        : "bg-[#EFEFEF]"
+                                    }  tracking-[0px] flex gap-[6px]  flex-row items-center justify-center rounded-full px-[11px] h-[24px]`}
+                                  >
+                                    <button
+                                      onClick={() =>
+                                        updateLineItem({
+                                          lineId: item.id,
+                                          quantity: item.quantity + 1,
+                                        }).then(() => {
+                                          window.dispatchEvent(
+                                            new Event("cart-updated")
+                                          )
+                                        })
+                                      }
+                                      className={`rounded-[4px] mr-[2px] w-[10px] h-[10px] items-center flex justify-center text-[14px]`}
+                                    >
+                                      <Image
+                                        alt=""
+                                        src={"/icons/plus.svg"}
+                                        className="w-[8.5px] opacity-[50%]"
+                                        height={50}
+                                        width={50}
+                                      />
+                                    </button>
+                                    <p
+                                      className="text-[10.5px] font-medium"
+                                      style={{
+                                        fontFamily:
+                                          "Plus Jakarta Sans, sans-serif",
+                                      }}
+                                    >
+                                      {item.quantity}
+                                    </p>
+                                    <button
+                                      onClick={() =>
+                                        updateLineItem({
+                                          lineId: item.id,
+                                          quantity: item.quantity + 1,
+                                        }).then(() => {
+                                          window.dispatchEvent(
+                                            new Event("cart-updated")
+                                          )
+                                        })
+                                      }
+                                      className={`rounded-[4px] w-[10px] h-[10px] items-center flex justify-center text-[14px]`}
+                                    >
+                                      <Image
+                                        alt=""
+                                        src={"/icons/minus.svg"}
+                                        className="w-[8px] opacity-[50%]"
+                                        height={50}
+                                        width={50}
+                                      />
+                                    </button>
+                                  </div>
                                   <button
                                     onClick={() =>
-                                      updateLineItem({
-                                        lineId: item.id,
-                                        quantity: item.quantity + 1,
-                                      }).then(() => {
+                                      deleteLineItem(item.id).then(() => {
                                         window.dispatchEvent(
                                           new Event("cart-updated")
                                         )
                                       })
                                     }
-                                    className={`rounded-[4px] w-[10px] h-[10px] items-center flex justify-center text-[14px]`}
+                                    className={`${
+                                      isMenuExpanded
+                                        ? "bg-[#ffffff]"
+                                        : "bg-[#EFEFEF]"
+                                    }  tracking-[0px] flex flex-row items-center justify-center rounded-full px-[11px] h-[24px]`}
                                   >
-                                    <Image
-                                      alt=""
-                                      src={"/icons/minus.svg"}
-                                      className="w-[8px] opacity-[50%]"
-                                      height={50}
-                                      width={50}
-                                    />
+                                    <p
+                                      className="text-[10.5px] font-medium"
+                                      style={{
+                                        fontFamily:
+                                          "Plus Jakarta Sans, sans-serif",
+                                      }}
+                                    >
+                                      Remove
+                                    </p>
                                   </button>
                                 </div>
-                                <button
-                                  onClick={() =>
-                                    deleteLineItem(item.id).then(() => {
-                                      window.dispatchEvent(
-                                        new Event("cart-updated")
-                                      )
-                                    })
-                                  }
-                                  className={`${
-                                    isMenuExpanded
-                                      ? "bg-[#ffffff]"
-                                      : "bg-[#EFEFEF]"
-                                  }  tracking-[0px] flex flex-row items-center justify-center rounded-full px-[11px] h-[24px]`}
-                                >
-                                  <p
-                                    className="text-[10.5px] font-medium"
-                                    style={{
-                                      fontFamily:
-                                        "Plus Jakarta Sans, sans-serif",
-                                    }}
-                                  >
-                                    Remove
-                                  </p>
-                                </button>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="flex items-center justify-center py-[40px]">
+                            <span
+                              className="text-[12.5px] text-[#00000050] font-medium"
+                              style={{
+                                fontFamily: "Plus Jakarta Sans, sans-serif",
+                              }}
+                            >
+                              Nothing Here
+                            </span>
                           </div>
-                        ))}
+                        )}
                       </div>
                       <div
                         className={`absolute top-0 left-0 right-0 h-[55px] pointer-events-none bg-gradient-to-b ${
@@ -1335,69 +1356,83 @@ export default function FourGotTenMenu({
                 </ModalB>
                 <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
                   <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
-                    <div className="flex flex-row justify-between">
-                      <span
-                        className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                        }}
-                      >
-                        Items
-                      </span>
-                      <div className="bg-[#EFEFEF] tracking-[0px] flex flex-row items-center justify-center  rounded-full px-[10px] h-[22.5px]">
-                        <p
-                          className="text-[10.25px] font-medium"
-                          style={{
-                            fontFamily: "Plus Jakarta Sans, sans-serif",
-                          }}
-                        >
-                          x{" "}
-                          {cart?.items?.reduce(
-                            (acc, item) => acc + item.quantity,
-                            0
-                          ) || 0}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex pt-[6px] flex-row justify-between">
-                      <span
-                        className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                        }}
-                      >
-                        Amount
-                      </span>
-                      <div className="bg-[#EFEFEF] tracking-[0px] flex flex-row items-center justify-center  rounded-full px-[10px] h-[22.5px]">
-                        <p
-                          className="text-[10.25px] font-medium"
-                          style={{
-                            fontFamily: "Plus Jakarta Sans, sans-serif",
-                          }}
-                        >
-                          {cart?.subtotal
-                            ? `$${(cart.subtotal / 100).toFixed(2)}`
-                            : "$0.00"}
-                        </p>
-                      </div>
-                    </div>
+                    {(cart?.items?.length ?? 0) > 0 && (
+                      <>
+                        <div className="flex flex-row justify-between">
+                          <span
+                            className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
+                            style={{
+                              fontFamily: "Plus Jakarta Sans, sans-serif",
+                            }}
+                          >
+                            Items
+                          </span>
+                          <div className="bg-[#EFEFEF] tracking-[0px] flex flex-row items-center justify-center  rounded-full px-[10px] h-[22.5px]">
+                            <p
+                              className="text-[10.25px] font-medium"
+                              style={{
+                                fontFamily: "Plus Jakarta Sans, sans-serif",
+                              }}
+                            >
+                              x{" "}
+                              {cart?.items?.reduce(
+                                (acc, item) => acc + item.quantity,
+                                0
+                              ) || 0}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex pt-[6px] flex-row justify-between">
+                          <span
+                            className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
+                            style={{
+                              fontFamily: "Plus Jakarta Sans, sans-serif",
+                            }}
+                          >
+                            Amount
+                          </span>
+                          <div className="bg-[#EFEFEF] tracking-[0px] flex flex-row items-center justify-center  rounded-full px-[10px] h-[22.5px]">
+                            <p
+                              className="text-[10.25px] font-medium"
+                              style={{
+                                fontFamily: "Plus Jakarta Sans, sans-serif",
+                              }}
+                            >
+                              {cart?.subtotal
+                                ? `$${(cart.subtotal / 100).toFixed(2)}`
+                                : "$0.00"}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <div className="flex flex-row gap-[10px]">
                       <button
                         data-hovermodal-close="true"
-                        style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
+                        style={{
+                          fontFamily: "Plus Jakarta Sans, sans-serif",
+                        }}
                         className={`${
                           isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
-                        } mt-[12px]  items-center justify-center flex font-medium  text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] w-full`}
+                        } ${
+                          (cart?.items?.length ?? 0) > 0
+                            ? "mt-[12px]"
+                            : "mt-[0px]"
+                        }  items-center justify-center flex font-medium  text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] w-full`}
                       >
                         Keep Shopping
                       </button>
-                      <Link
-                        href={"/checkout"}
-                        style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
-                        className="mt-[12px] font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
-                      >
-                        Checkout
-                      </Link>
+                      {(cart?.items?.length ?? 0) > 0 && (
+                        <Link
+                          href={"/cart"}
+                          style={{
+                            fontFamily: "Plus Jakarta Sans, sans-serif",
+                          }}
+                          className="mt-[12px] font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
+                        >
+                          Go to Cart
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </ModalB>

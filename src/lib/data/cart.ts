@@ -245,14 +245,55 @@ export async function initiatePaymentSession(
     ...(await getAuthHeaders()),
   }
 
-  return (sdk as any).store.payment
-    .initiatePaymentSession(cart, data, {}, headers)
-    .then(async (resp: HttpTypes.StoreCart) => {
+  // Create payment collection if it doesn't exist
+  let paymentCollectionId = cart.payment_collection?.id
+  if (!paymentCollectionId) {
+    const collection = await sdk.client.fetch<{
+      payment_collection: { id: string }
+    }>(`/store/payment-collections`, {
+      method: "POST",
+      body: JSON.stringify({
+        cart_id: cart.id,
+      }),
+      headers,
+    })
+    paymentCollectionId = collection.payment_collection.id
+  }
+
+  // Create payment session for the selected provider
+  return sdk.client
+    .fetch<{ payment_session: any }>(
+      `/store/payment-collections/${paymentCollectionId}/payment-sessions`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          provider_id: data.provider_id,
+        }),
+        headers,
+      }
+    )
+    .then(async () => {
+      // Refresh cart to get updated payment sessions
+      const updatedCart = await sdk.client.fetch<HttpTypes.StoreCartResponse>(
+        `/store/carts/${cart.id}`,
+        {
+          method: "GET",
+          headers,
+        }
+      )
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
-      return resp
+      return updatedCart.cart
     })
-    .catch(medusaError)
+    .catch((error) => {
+      // Return cleaner error message
+      if (error?.message?.includes("Unrecognized fields")) {
+        throw new Error(
+          "Could not initialize payment. Please try selecting a different payment method."
+        )
+      }
+      throw error
+    })
 }
 
 export async function applyPromotions(codes: string[]) {

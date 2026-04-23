@@ -1,3 +1,3 @@
 module.exports = {
-  MOBILE_MAX_WIDTH: 450,
+  MOBILE_MAX_WIDTH: 750,
 }

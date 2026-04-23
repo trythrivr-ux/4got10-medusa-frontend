@@ -54,7 +54,7 @@ module.exports = {
         desktop: "1280px",
         wide: "1440px",
         ultrawide: "1680px",
-        "3xsmall": "450px",
+        "3xsmall": "750px",
         "2xsmall": "320px",
         xsmall: "512px",
         small: "1024px",

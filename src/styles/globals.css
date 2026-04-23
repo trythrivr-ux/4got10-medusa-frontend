@@ -19,7 +19,7 @@
   }
 
   /* Hide elements on screens below 450px */
-  @media (max-width: 450px) {
+  @media (max-width: 750px) {
     .fourgot10-hide-on-small {
       display: none !important;
     }
