@@ -50,7 +50,7 @@ export const updateCustomer = async (body: HttpTypes.StoreUpdateCustomer) => {
 
   const updateRes = await sdk.store.customer
     .update(body, {}, headers)
-    .then(({ customer }) => customer)
+    .then((response: any) => response.customer)
     .catch(medusaError)
 
   const cacheTag = await getCacheTag("customers")
@@ -80,11 +80,8 @@ export async function signup(_currentState: unknown, formData: FormData) {
       ...(await getAuthHeaders()),
     }
 
-    const { customer: createdCustomer } = await sdk.store.customer.create(
-      customerForm,
-      {},
-      headers
-    )
+    const response = await sdk.store.customer.create(customerForm, {}, headers)
+    const createdCustomer = (response as any).customer
 
     const loginToken = await sdk.auth.login("customer", "emailpass", {
       email: customerForm.email,
@@ -97,6 +94,19 @@ export async function signup(_currentState: unknown, formData: FormData) {
     revalidateTag(customerCacheTag)
 
     await transferCart()
+
+    // Update cart email to match new customer
+    const cartId = await getCartId()
+    if (cartId) {
+      await sdk.store.cart.update(
+        cartId,
+        { email: customerForm.email },
+        {},
+        headers
+      )
+      const cartCacheTag = await getCacheTag("carts")
+      revalidateTag(cartCacheTag)
+    }
 
     return createdCustomer
   } catch (error: any) {
@@ -122,6 +132,17 @@ export async function login(_currentState: unknown, formData: FormData) {
 
   try {
     await transferCart()
+
+    // Update cart email to match logged-in customer
+    const cartId = await getCartId()
+    if (cartId) {
+      const headers = {
+        ...(await getAuthHeaders()),
+      }
+      await sdk.store.cart.update(cartId, { email }, {}, headers)
+      const cartCacheTag = await getCacheTag("carts")
+      revalidateTag(cartCacheTag)
+    }
   } catch (error: any) {
     return error.toString()
   }
@@ -186,7 +207,7 @@ export const addCustomerAddress = async (
 
   return sdk.store.customer
     .createAddress(address, {}, headers)
-    .then(async ({ customer }) => {
+    .then(async (response: any) => {
       const customerCacheTag = await getCacheTag("customers")
       revalidateTag(customerCacheTag)
       return { success: true, error: null }

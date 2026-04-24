@@ -21,7 +21,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 
   return (
     <html lang="en" data-mode="light">
-      <body className="bg-white">
+      <body className="bg-white  overflow-x-hidden">
         <CustomLayoutProvider>
           <div className="p-[8px] phone:p-[12px]">
             <CustomLayoutWrapper regions={regions}>

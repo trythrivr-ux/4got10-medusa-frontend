@@ -6,6 +6,7 @@ import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
 import OptionSelect from "@modules/products/components/product-actions/option-select"
+import RolloutStatus from "@modules/products/components/product-preview/rollout-status"
 import { isEqual } from "lodash"
 import { useParams, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -17,6 +18,11 @@ type ProductActionsProps = {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion
   disabled?: boolean
+  rolloutDates?: {
+    drop_date?: string
+    sold_out_date?: string
+    announcement_date?: string
+  }
 }
 
 const optionsAsKeymap = (
@@ -31,6 +37,7 @@ const optionsAsKeymap = (
 export default function ProductActions({
   product,
   disabled,
+  rolloutDates,
 }: ProductActionsProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -164,26 +171,37 @@ export default function ProductActions({
 
         <ProductPrice product={product} variant={selectedVariant} />
 
-        <Button
-          onClick={handleAddToCart}
-          disabled={
-            !inStock ||
-            !selectedVariant ||
-            !!disabled ||
-            isAdding ||
-            !isValidVariant
-          }
-          variant="primary"
-          className="w-full h-10"
-          isLoading={isAdding}
-          data-testid="add-product-button"
-        >
-          {!selectedVariant
-            ? "Select variant"
-            : !inStock || !isValidVariant
-            ? "Out of stock"
-            : "Add to cart"}
-        </Button>
+        {rolloutDates ? (
+          <RolloutStatus
+            productId={product.id!}
+            productHandle={product.handle!}
+            dropDate={rolloutDates.drop_date}
+            soldOutDate={rolloutDates.sold_out_date}
+            announcementDate={rolloutDates.announcement_date}
+            onAddToCart={handleAddToCart}
+          />
+        ) : (
+          <Button
+            onClick={handleAddToCart}
+            disabled={
+              !inStock ||
+              !selectedVariant ||
+              !!disabled ||
+              isAdding ||
+              !isValidVariant
+            }
+            variant="primary"
+            className="w-full h-10"
+            isLoading={isAdding}
+            data-testid="add-product-button"
+          >
+            {!selectedVariant
+              ? "Select variant"
+              : !inStock || !isValidVariant
+              ? "Out of stock"
+              : "Add to cart"}
+          </Button>
+        )}
         <MobileActions
           product={product}
           variant={selectedVariant}

@@ -247,6 +247,109 @@ export const sdk = {
           headers,
         })
       },
+      transferCart: async (
+        cartId: string,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(`/store/carts/${cartId}/transfer`, {
+          method: "POST",
+          headers,
+        })
+      },
+    },
+    customer: {
+      create: async (
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch("/store/customers", {
+          method: "POST",
+          body: JSON.stringify(data ?? {}),
+          headers,
+        })
+      },
+      update: async (
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch("/store/customers/me", {
+          method: "POST",
+          body: JSON.stringify(data ?? {}),
+          headers,
+        })
+      },
+      createAddress: async (
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch("/store/customers/me/addresses", {
+          method: "POST",
+          body: JSON.stringify(data ?? {}),
+          headers,
+        })
+      },
+      deleteAddress: async (
+        addressId: string,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(
+          `/store/customers/me/addresses/${addressId}`,
+          {
+            method: "DELETE",
+            headers,
+          }
+        )
+      },
+      updateAddress: async (
+        addressId: string,
+        data: any,
+        _query: any = {},
+        headers: Record<string, string> = {}
+      ) => {
+        return await sdk.client.fetch(
+          `/store/customers/me/addresses/${addressId}`,
+          {
+            method: "POST",
+            body: JSON.stringify(data ?? {}),
+            headers,
+          }
+        )
+      },
+    },
+  },
+  auth: {
+    register: async (
+      actor: string,
+      type: string,
+      data: any
+    ): Promise<string> => {
+      const response = await sdk.client.fetch<{ token: string }>(
+        "/store/auth/customer/emailpass/register",
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        }
+      )
+      return response.token
+    },
+    login: async (actor: string, type: string, data: any): Promise<string> => {
+      const response = await sdk.client.fetch<{ token: string }>(
+        "/store/auth/customer/emailpass",
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        }
+      )
+      return response.token
+    },
+    logout: async (): Promise<void> => {
+      // For JWT auth, just clear the token locally - no server request needed
+      return Promise.resolve()
     },
   },
 }

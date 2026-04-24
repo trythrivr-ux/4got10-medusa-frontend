@@ -1,12 +1,11 @@
 "use client"
 
-import React, { useEffect, useActionState } from "react";
+import React, { useEffect, useActionState } from "react"
 
 import Input from "@modules/common/components/input"
 
 import AccountInfo from "../account-info"
 import { HttpTypes } from "@medusajs/types"
-// import { updateCustomer } from "@lib/data/customer"
 
 type MyInformationProps = {
   customer: HttpTypes.StoreCustomer
@@ -15,25 +14,21 @@ type MyInformationProps = {
 const ProfileEmail: React.FC<MyInformationProps> = ({ customer }) => {
   const [successState, setSuccessState] = React.useState(false)
 
-  // TODO: It seems we don't support updating emails now?
+  // Email updates are not supported in Medusa v2 through the customer endpoint
+  // Email is tied to the auth identity and requires a different flow
   const updateCustomerEmail = (
     _currentState: Record<string, unknown>,
     formData: FormData
   ) => {
-    const customer = {
-      email: formData.get("email") as string,
-    }
-
-    try {
-      // await updateCustomer(customer)
-      return { success: true, error: null }
-    } catch (error: any) {
-      return { success: false, error: error.toString() }
+    return {
+      success: false,
+      error:
+        "Email updates are not currently supported. Please contact support to change your email.",
     }
   }
 
   const [state, formAction] = useActionState(updateCustomerEmail, {
-    error: false,
+    error: "",
     success: false,
   })
 

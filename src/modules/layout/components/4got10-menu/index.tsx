@@ -7,6 +7,7 @@ import gsap from "gsap"
 import { HttpTypes } from "@medusajs/types"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { updateRegion, updateLineItem, deleteLineItem } from "@lib/data/cart"
+import { retrieveCustomer } from "@lib/data/customer"
 import HoverModal, { ModalB } from "@modules/common/components/hover-modal"
 import { MOBILE_MAX_WIDTH } from "@lib/breakpoints"
 import Link from "next/link"
@@ -30,9 +31,15 @@ const Pill = ({
 export default function FourGotTenMenu({
   regions,
   cart,
+  scrollContainerRef,
+  isStuck: externalIsStuck,
+  isHomePage,
 }: {
   regions: HttpTypes.StoreRegion[]
   cart: HttpTypes.StoreCart | null
+  scrollContainerRef?: React.RefObject<HTMLElement>
+  isStuck?: boolean
+  isHomePage?: boolean
 }) {
   const router = useRouter()
 
@@ -70,11 +77,22 @@ export default function FourGotTenMenu({
   const logoRightRef = useRef<HTMLDivElement | null>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
 
-  const [isStuck, setIsStuck] = useState(false)
+  const [isSmallScreen, setIsSmallScreen] = useState(
+    typeof window !== "undefined"
+      ? window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`).matches
+      : false
+  )
+
+  const [isStuckState, setIsStuckState] = useState(externalIsStuck ?? false)
+
   const [isMenuExpanded, setIsMenuExpanded] = useState(false)
   const [isCartScrolling, setIsCartScrolling] = useState(false)
   const cartScrollRef = useRef<HTMLDivElement | null>(null)
-  const [isSmallScreen, setIsSmallScreen] = useState(false)
+  const [customer, setCustomer] = useState<HttpTypes.StoreCustomer | null>(null)
+  const hasAnimatedInRef = useRef(false)
+
+  const forcedHomeState2 = isHomePage === true && !isSmallScreen
+  const isStuck = forcedHomeState2 ? true : externalIsStuck ?? isStuckState
 
   useLayoutEffect(() => {
     if (!isMenuExpanded || !expandedMenuContentRef.current) {
@@ -166,19 +184,163 @@ export default function FourGotTenMenu({
   }, [isMenuExpanded])
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (!triggerRef.current) {
-        return
-      }
+    if (forcedHomeState2) {
+      setIsStuckState(true)
+      return
+    }
 
-      const stuckNow = triggerRef.current.getBoundingClientRect().top <= 0
-      setIsStuck((prev) => (prev !== stuckNow ? stuckNow : prev))
+    const handleScroll = () => {
+      if (!triggerRef.current) return
+
+      const threshold = 0
+      const stuckNow =
+        triggerRef.current.getBoundingClientRect().top <= threshold
+      setIsStuckState((prev) => (prev !== stuckNow ? stuckNow : prev))
     }
 
     handleScroll()
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+
+    const scrollContainer = scrollContainerRef?.current || window
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true })
+
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll)
+    }
+  }, [scrollContainerRef, forcedHomeState2])
+
+  useEffect(() => {
+    if (forcedHomeState2 && stickyOuterRef.current) {
+      // Initially hide the menu on home page (desktop only)
+      gsap.set(stickyOuterRef.current, {
+        y: -100,
+        opacity: 0,
+      })
+    }
+  }, [forcedHomeState2])
+
+  useLayoutEffect(() => {
+    if (isHomePage && stickyInnerRef.current && stickyOuterRef.current) {
+      // Set initial state 2 styles immediately on home page (before paint)
+      // Only on desktop, not mobile
+      if (!isSmallScreen) {
+        gsap.set(stickyInnerRef.current, {
+          backgroundColor: "#FFFFFF",
+          paddingTop: 12,
+          paddingBottom: 8,
+          paddingLeft: 8,
+          paddingRight: 8,
+          height: "auto",
+        })
+
+        gsap.set(stickyOuterRef.current, {
+          paddingTop: 22,
+          paddingLeft: 22,
+          paddingRight: 22,
+        })
+
+        // Hide pills container (state 2 behavior)
+        if (pillsContainerRef.current) {
+          gsap.set(pillsContainerRef.current, {
+            display: "none",
+          })
+        }
+
+        // Set menu and cart box widths to state 2 values
+        if (menuBoxRef.current) {
+          gsap.set(menuBoxRef.current, {
+            width: 142,
+            flex: "0 0 142px",
+          })
+        }
+        if (cartBoxRef.current) {
+          gsap.set(cartBoxRef.current, {
+            clearProps: "width",
+          })
+        }
+      } else {
+        // On mobile, set state 1 styles to ensure correct padding
+        gsap.set(stickyInnerRef.current, {
+          backgroundColor: "transparent",
+          paddingTop: 0,
+          paddingBottom: 0,
+          paddingLeft: 0,
+          paddingRight: 0,
+          height: "auto",
+        })
+
+        // Clear any inline padding styles to let Tailwind className handle it
+        gsap.set(stickyOuterRef.current, {
+          clearProps: "paddingLeft,paddingRight",
+          paddingTop: 12,
+        })
+
+        // Show pills container (state 1 behavior)
+        if (pillsContainerRef.current) {
+          gsap.set(pillsContainerRef.current, {
+            display: "flex",
+          })
+        }
+
+        // Set menu and cart box widths to state 1 values (full width on mobile)
+        gsap.set([menuBoxRef.current, cartBoxRef.current], {
+          clearProps: "width",
+          flex: 1,
+        })
+
+        // Set background colors to white on mobile
+        if (menuBoxRef.current) {
+          gsap.set(menuBoxRef.current, {
+            backgroundColor: "#FFFFFF",
+          })
+        }
+        if (cartBoxRef.current) {
+          gsap.set(cartBoxRef.current, {
+            backgroundColor: "#FFFFFF",
+          })
+        }
+      }
+    }
+  }, [isHomePage, isSmallScreen])
+
+  useEffect(() => {
+    if (isHomePage && scrollContainerRef?.current && stickyOuterRef.current) {
+      const handleScroll = () => {
+        if (!scrollContainerRef.current || !stickyOuterRef.current) return
+
+        const scrollTop = scrollContainerRef.current.scrollTop
+        const viewportHeight = window.innerHeight
+
+        // Trigger animation when we've scrolled past the first snap (viewport height)
+        if (scrollTop > viewportHeight * 0.5 && !hasAnimatedInRef.current) {
+          hasAnimatedInRef.current = true
+          gsap.to(stickyOuterRef.current, {
+            y: 0,
+            opacity: 1,
+            duration: 0.5,
+            ease: "power2.out",
+          })
+        }
+        // Animate out when scrolling back to container 1
+        else if (scrollTop < viewportHeight * 0.5 && hasAnimatedInRef.current) {
+          hasAnimatedInRef.current = false
+          gsap.to(stickyOuterRef.current, {
+            y: -100,
+            opacity: 0,
+            duration: 0.5,
+            ease: "power2.out",
+          })
+        }
+      }
+
+      scrollContainerRef.current.addEventListener("scroll", handleScroll, {
+        passive: true,
+      })
+
+      return () => {
+        scrollContainerRef.current?.removeEventListener("scroll", handleScroll)
+      }
+    }
+  }, [isHomePage, scrollContainerRef])
 
   useEffect(() => {
     const mq = window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`)
@@ -196,10 +358,13 @@ export default function FourGotTenMenu({
     }
 
     const ctx = gsap.context(() => {
-      gsap.set(stickyOuterRef.current, {
-        backgroundColor: "transparent",
-        paddingTop: 8,
-      })
+      // Only set default styles if not on home page mobile
+      if (!(isHomePage && isSmallScreen)) {
+        gsap.set(stickyOuterRef.current, {
+          backgroundColor: "transparent",
+          paddingTop: 8,
+        })
+      }
 
       gsap.set(stickyInnerRef.current, {
         backgroundColor: "transparent",
@@ -294,7 +459,7 @@ export default function FourGotTenMenu({
         {
           backgroundColor: "#FFFFFF",
           height: "auto",
-          paddingTop: 12,
+          paddingTop: isHomePage ? 12 : 12,
           paddingBottom: 12,
           paddingLeft: 12,
           paddingRight: 12,
@@ -307,7 +472,7 @@ export default function FourGotTenMenu({
       tl.to(
         outer,
         {
-          paddingTop: 12,
+          paddingTop: isHomePage ? 12 : 12,
           duration: 0.2,
         },
         0
@@ -452,49 +617,68 @@ export default function FourGotTenMenu({
       )
     } else if (isStuck && !isMenuExpanded) {
       if (isSmallScreen) {
-        if (logoEls.length) {
-          tl.set(
-            logoEls,
-            {
-              opacity: 0,
-            },
-            0
-          )
-        }
+        if (logoEls.length) tl.set(logoEls, { opacity: 0 }, 0)
       }
 
-      tl.to(
-        inner,
-        {
-          backgroundColor: isSmallScreen ? "transparent" : "#FFFFFF",
-          paddingTop: isSmallScreen ? 0 : 8,
-          paddingBottom: isSmallScreen ? 0 : 8,
-          paddingLeft: isSmallScreen ? 0 : 8,
-          paddingRight: isSmallScreen ? 0 : 8,
-          duration: 0.25,
-        },
-        0
-      )
+      if (forcedHomeState2 && !isSmallScreen) {
+        // Only force state 2 on desktop, not mobile
+        tl.set(
+          inner,
+          {
+            backgroundColor: "#FFFFFF",
+            paddingTop: 8,
+            paddingBottom: 8,
+            paddingLeft: 8,
+            paddingRight: 8,
+            height: "auto",
+          },
+          0
+        )
 
-      tl.set(
-        inner,
-        {
-          height: "auto",
-        },
-        0
-      )
+        tl.set(
+          outer,
+          {
+            paddingTop: 22,
+            paddingLeft: 22,
+            paddingRight: 22,
+          },
+          0
+        )
+      } else {
+        // On mobile home page or other pages, use state 1
+        tl.to(
+          inner,
+          {
+            backgroundColor: isSmallScreen ? "transparent" : "#FFFFFF",
+            paddingTop: isSmallScreen ? 0 : 8,
+            paddingBottom: isSmallScreen ? 0 : 8,
+            paddingLeft: isSmallScreen ? 0 : 8,
+            paddingRight: isSmallScreen ? 0 : 8,
+            duration: 0.25,
+          },
+          0
+        )
 
-      tl.fromTo(
-        outer,
-        {
-          paddingTop: 8,
-        },
-        {
-          paddingTop: isSmallScreen ? 16 : 22,
-          duration: 0.25,
-        },
-        0
-      )
+        tl.set(
+          inner,
+          {
+            height: "auto",
+          },
+          0
+        )
+
+        tl.fromTo(
+          outer,
+          {
+            paddingTop: 8,
+          },
+          {
+            paddingTop: isSmallScreen ? 16 : 22,
+            duration: 0.25,
+          },
+          0
+        )
+      }
 
       if (menuBoxRef.current) {
         tl.set(menuBoxRef.current, {
@@ -677,7 +861,7 @@ export default function FourGotTenMenu({
       tl.to(
         outer,
         {
-          paddingTop: 0,
+          paddingTop: 12,
           duration: 0.2,
         },
         0
@@ -805,7 +989,7 @@ export default function FourGotTenMenu({
         tlRef.current = null
       }
     }
-  }, [isStuck, isMenuExpanded])
+  }, [isStuck, isMenuExpanded, isHomePage])
 
   return (
     <>
@@ -813,21 +997,37 @@ export default function FourGotTenMenu({
 
       <div
         ref={stickyOuterRef}
-        className={`sticky rounded-[12px] items-center z-50 pt-[22px] ${
+        className={`${
+          isHomePage ? "fixed" : "sticky"
+        } rounded-[12px] items-center ${isHomePage ? "z-[9]" : "z-50"} ${
           isMenuExpanded
-            ? "top-[12px] px-[8px] phone:px-[12px] w-full"
-            : "top-0 px-[9.5px] phone:px-[12px] mt-[9.5px] phone:mt-[12px] w-full"
+            ? `${
+                isHomePage
+                  ? "top-[6px] phone:top-[12px]"
+                  : "top-[6px] phone:top-[12px]"
+              } ${
+                isHomePage
+                  ? "phone:px-[22px] px-[17px]"
+                  : "px-[8px] phone:px-[12px]"
+              } w-full`
+            : `top-[0px] ${
+                isHomePage
+                  ? "phone:px-[22px] px-[15px]"
+                  : "px-[9.5px] phone:px-[12px]"
+              } w-full`
         }`}
       >
         <div
-          className={`bg-gradient-to-b from-[#efefef] to-transaprent rounded-[12.5px] absolute left-0 right-0 top-[12px] h-[100px] ${
-            isMenuExpanded ? "hidden" : ""
-          }`}
+          className={`bg-gradient-to-b from-[#efefef] to-transaprent rounded-[12.5px] absolute left-0 right-0 ${
+            !isHomePage ? "top-[12px]" : "top-[12px]"
+          } h-[100px] ${isMenuExpanded ? "" : ""}`}
         ></div>
         {!isSmallScreen && (
           <div
             ref={logoLeftRef}
-            className="pointer-events-none  pt-[10px] select-none absolute left-[12px] top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]"
+            className={`pointer-events-none  pt-[10px] select-none absolute ${
+              isHomePage ? "left-[22px]" : "left-[12px]"
+            } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
           >
             <Image
               src="/menu-icons/4got10-2/4G.svg"
@@ -856,7 +1056,9 @@ export default function FourGotTenMenu({
         {!isSmallScreen && (
           <div
             ref={logoRightRef}
-            className="pointer-events-none pt-[10px] select-none absolute right-[5px] top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]"
+            className={`pointer-events-none pt-[10px] select-none absolute ${
+              isHomePage ? "right-[22px]" : "right-[12px]"
+            } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
           >
             <Image
               src="/menu-icons/4got10-2/MA.svg"
@@ -870,14 +1072,18 @@ export default function FourGotTenMenu({
               alt=""
               width={100}
               height={100}
-              className="w-fit max-h-[39px] pr-[6px]"
+              className="w-fit max-h-[39px]"
             />
           </div>
         )}
 
         <div
           ref={stickyInnerRef}
-          className={`relative rounded-[12px] py-[0px] px-[0px] flex flex-col mx-auto will-change-[width] ${
+          className={`relative rounded-[12px] ${
+            isHomePage
+              ? "phone:py-[8px] phone:px-[8px] py-[0px] px-[0px]"
+              : "py-[0px] px-[0px]"
+          } flex flex-col mx-auto will-change-[width] ${
             isStuck || isMenuExpanded
               ? isSmallScreen && isStuck && !isMenuExpanded
                 ? ""
@@ -887,7 +1093,11 @@ export default function FourGotTenMenu({
         >
           <div
             className={`flex flex-row gap-[8px] items-center ${
-              isMenuExpanded ? "h-[52px]" : isStuck ? "h-[46px]" : "h-[52px]"
+              isMenuExpanded
+                ? "h-[52px]"
+                : isStuck || isHomePage
+                ? "h-[46px]"
+                : "h-[52px]"
             }`}
           >
             <div
@@ -968,130 +1178,175 @@ export default function FourGotTenMenu({
             isStuck={isStuck}
             modalContent={
               <div className="flex flex-col gap-[8px] overflow-visible">
-                <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
-                  <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
-                    <div className="flex pb-[6px] flex-row justify-start">
-                      <span
-                        className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                        }}
-                      >
-                        Sebastian
-                      </span>
-                    </div>
-                  </div>
-                </ModalB>
-                <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
-                  <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
-                    <div className="flex pb-[6px] flex-row justify-start">
-                      <span
-                        className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
-                        style={{
-                          fontFamily: "Plus Jakarta Sans, sans-serif",
-                        }}
-                      >
-                        Recent Orders
-                      </span>
-                    </div>
-                    <div className="flex flex-col w-full gap-[8px]">
-                      <div className="flex w-full flex-row gap-[12px]">
-                        <div className="relative w-[80px] flex gap-[6.5px] flex-wrap h-[80px] rounded-[7px] overflow-hidden  shrink-0">
-                          <div
-                            className={`${
-                              isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
-                            } rounded-[9px] h-[35px] aspect-square`}
-                          ></div>
-                          <div
-                            className={`${
-                              isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
-                            } rounded-[9px] h-[35px] aspect-square`}
-                          ></div>
-                          <div
-                            className={`${
-                              isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
-                            } rounded-[9px] h-[35px] aspect-square`}
-                          ></div>
-                          <div
-                            className={`${
-                              isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
-                            } rounded-[9px] h-[35px] aspect-square`}
-                          ></div>
-                        </div>
-
-                        <div className="flex w-full flex-col justify-center items-start gap-[6px]">
-                          <div className="flex flex-row items-center justify-center gap-[7px]">
-                            <span
-                              className="text-[12.5px] font-medium truncate"
-                              style={{
-                                fontFamily: "Plus Jakarta Sans, sans-serif",
-                              }}
-                            >
-                              Order #1
-                            </span>
-                            <div className="flex h-[12.5px] bg-[#00000030] w-[1.25px]"></div>
-                            <span
-                              className="text-[12px] font-medium truncate"
-                              style={{
-                                fontFamily: "Plus Jakarta Sans, sans-serif",
-                              }}
-                            >
-                              #34343
-                            </span>
-                          </div>
-                          <div className="flex flex-row items-center overflow-hidden gap-[7px]">
-                            <span
-                              className="text-[11.5px] text-nowrap truncate text-[#00000070] font-medium"
-                              style={{
-                                fontFamily: "Plus Jakarta Sans, sans-serif",
-                                maxWidth: "200px",
-                              }}
-                            >
-                              Magazine - Vice City, Magazine, Risky Business
-                            </span>
-                          </div>
-
-                          <button
-                            className={`${
-                              isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
-                            }  tracking-[0px] mt-[8px] w-full flex flex-row items-center justify-center rounded-full px-[11px] h-[24px]`}
+                {customer ? (
+                  <>
+                    <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
+                      <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
+                        <div className="flex pb-[6px] flex-row justify-start">
+                          <span
+                            className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
+                            style={{
+                              fontFamily: "Plus Jakarta Sans, sans-serif",
+                            }}
                           >
-                            <p
-                              className="text-[10.5px] font-medium"
-                              style={{
-                                fontFamily: "Plus Jakarta Sans, sans-serif",
-                              }}
-                            >
-                              Track Order
-                            </p>
-                          </button>
+                            {customer.first_name || "Customer"}
+                          </span>
                         </div>
                       </div>
+                    </ModalB>
+                    <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
+                      <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
+                        <div className="flex pb-[6px] flex-row justify-start">
+                          <span
+                            className="font-medium pb-[0px] text-[12.25px] tracking-[0.25px]"
+                            style={{
+                              fontFamily: "Plus Jakarta Sans, sans-serif",
+                            }}
+                          >
+                            Recent Orders
+                          </span>
+                        </div>
+                        <div className="flex flex-col w-full gap-[8px]">
+                          <div className="flex w-full flex-row gap-[12px]">
+                            <div className="relative w-[80px] flex gap-[6.5px] flex-wrap h-[80px] rounded-[7px] overflow-hidden  shrink-0">
+                              <div
+                                className={`${
+                                  isMenuExpanded
+                                    ? "bg-[#ffffff]"
+                                    : "bg-[#EFEFEF]"
+                                } rounded-[9px] h-[35px] aspect-square`}
+                              ></div>
+                              <div
+                                className={`${
+                                  isMenuExpanded
+                                    ? "bg-[#ffffff]"
+                                    : "bg-[#EFEFEF]"
+                                } rounded-[9px] h-[35px] aspect-square`}
+                              ></div>
+                              <div
+                                className={`${
+                                  isMenuExpanded
+                                    ? "bg-[#ffffff]"
+                                    : "bg-[#EFEFEF]"
+                                } rounded-[9px] h-[35px] aspect-square`}
+                              ></div>
+                              <div
+                                className={`${
+                                  isMenuExpanded
+                                    ? "bg-[#ffffff]"
+                                    : "bg-[#EFEFEF]"
+                                } rounded-[9px] h-[35px] aspect-square`}
+                              ></div>
+                            </div>
+
+                            <div className="flex w-full flex-col justify-center items-start gap-[6px]">
+                              <div className="flex flex-row items-center justify-center gap-[7px]">
+                                <span
+                                  className="text-[12.5px] font-medium truncate"
+                                  style={{
+                                    fontFamily: "Plus Jakarta Sans, sans-serif",
+                                  }}
+                                >
+                                  Order #1
+                                </span>
+                                <div className="flex h-[12.5px] bg-[#00000030] w-[1.25px]"></div>
+                                <span
+                                  className="text-[12px] font-medium truncate"
+                                  style={{
+                                    fontFamily: "Plus Jakarta Sans, sans-serif",
+                                  }}
+                                >
+                                  #34343
+                                </span>
+                              </div>
+                              <div className="flex flex-row items-center overflow-hidden gap-[7px]">
+                                <span
+                                  className="text-[11.5px] text-nowrap truncate text-[#00000070] font-medium"
+                                  style={{
+                                    fontFamily: "Plus Jakarta Sans, sans-serif",
+                                    maxWidth: "200px",
+                                  }}
+                                >
+                                  Magazine - Vice City, Magazine, Risky Business
+                                </span>
+                              </div>
+
+                              <button
+                                className={`${
+                                  isMenuExpanded
+                                    ? "bg-[#ffffff]"
+                                    : "bg-[#EFEFEF]"
+                                }  tracking-[0px] mt-[8px] w-full flex flex-row items-center justify-center rounded-full px-[11px] h-[24px]`}
+                              >
+                                <p
+                                  className="text-[10.5px] font-medium"
+                                  style={{
+                                    fontFamily: "Plus Jakarta Sans, sans-serif",
+                                  }}
+                                >
+                                  Track Order
+                                </p>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </ModalB>
+                    <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
+                      <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
+                        <div className="flex flex-row gap-[10px]">
+                          <Link
+                            href="/account"
+                            style={{
+                              fontFamily: "Plus Jakarta Sans, sans-serif",
+                            }}
+                            className=" font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
+                          >
+                            Account
+                          </Link>
+                          <Link
+                            href="/account/#orders"
+                            style={{
+                              fontFamily: "Plus Jakarta Sans, sans-serif",
+                            }}
+                            className={`${
+                              isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
+                            }  font-medium  text-[11.5px] flex items-center justify-center tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] w-full`}
+                          >
+                            All Orders
+                          </Link>
+                        </div>
+                      </div>
+                    </ModalB>
+                  </>
+                ) : (
+                  <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
+                    <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
+                      <div className="flex flex-row gap-[10px]">
+                        <Link
+                          href="/account"
+                          style={{
+                            fontFamily: "Plus Jakarta Sans, sans-serif",
+                          }}
+                          className=" font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
+                        >
+                          Sign in
+                        </Link>
+                        <Link
+                          href="/account"
+                          style={{
+                            fontFamily: "Plus Jakarta Sans, sans-serif",
+                          }}
+                          className={`${
+                            isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
+                          }  font-medium  text-[11.5px] flex items-center justify-center tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] w-full`}
+                        >
+                          Sign up
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </ModalB>
-                <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
-                  <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
-                    <div className="flex flex-row gap-[10px]">
-                      <Link
-                        href="/account"
-                        style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
-                        className=" font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
-                      >
-                        Account
-                      </Link>
-                      <Link
-                        href="/account/#orders"
-                        style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
-                        className={`${
-                          isMenuExpanded ? "bg-[#ffffff]" : "bg-[#EFEFEF]"
-                        }  font-medium  text-[11.5px] flex items-center justify-center tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] w-full`}
-                      >
-                        All Orders
-                      </Link>
-                    </div>
-                  </div>
-                </ModalB>
+                  </ModalB>
+                )}
               </div>
             }
           />

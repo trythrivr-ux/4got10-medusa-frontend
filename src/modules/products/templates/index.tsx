@@ -9,6 +9,7 @@ import ProductInfo from "@modules/products/templates/product-info"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
+import { getActiveRollouts } from "@lib/data/rollouts"
 
 import ProductActionsWrapper from "./product-actions-wrapper"
 
@@ -19,7 +20,7 @@ type ProductTemplateProps = {
   images: HttpTypes.StoreProductImage[]
 }
 
-const ProductTemplate: React.FC<ProductTemplateProps> = ({
+const ProductTemplate: React.FC<ProductTemplateProps> = async ({
   product,
   region,
   countryCode,
@@ -27,6 +28,24 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
 }) => {
   if (!product || !product.id) {
     return notFound()
+  }
+
+  // Check if product is in a rollout with a future announcement date
+  const rolloutsData = await getActiveRollouts()
+  const rollouts = (rolloutsData as any)?.rollouts || []
+  const now = new Date()
+
+  const productRollout = rollouts.find(
+    (rollout: any) =>
+      rollout.product_ids && rollout.product_ids.includes(product.id)
+  )
+
+  if (productRollout && productRollout.announcement_date) {
+    const announcementDate = new Date(productRollout.announcement_date)
+    if (announcementDate > now) {
+      // Product not yet announced, return 404
+      return notFound()
+    }
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import gsap from "gsap"
 import type { ReactNode, RefObject } from "react"
 import { MOBILE_MAX_WIDTH } from "@lib/breakpoints"
@@ -319,10 +320,10 @@ export default function HoverModal({
   }
 
   if (isMobile) {
-    return (
-      <div className="fixed  inset-0 z-50">
+    return createPortal(
+      <div className="fixed inset-0 z-[9999]">
         <div
-          className="absolute   inset-0 bg-black/10"
+          className="absolute inset-0 bg-black/10"
           style={{ backdropFilter: "blur(8px)" }}
           onClick={() => setIsOpen(false)}
         />
@@ -342,7 +343,8 @@ export default function HoverModal({
         >
           {modalContent}
         </div>
-      </div>
+      </div>,
+      document.body
     )
   }
 

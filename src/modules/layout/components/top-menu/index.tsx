@@ -7,6 +7,7 @@ import gsap from "gsap"
 import { HttpTypes } from "@medusajs/types"
 import { useParams, usePathname } from "next/navigation"
 import { updateRegion } from "@lib/data/cart"
+import { getActiveRollouts } from "@lib/data/rollouts"
 
 const Pill = ({
   children,
@@ -30,6 +31,13 @@ export default function FourGotTenMenu1({
   regions: HttpTypes.StoreRegion[]
 }) {
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+  const [activeRollout, setActiveRollout] = useState<any>(null)
+  const [countdown, setCountdown] = useState<{
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+  } | null>(null)
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -54,6 +62,48 @@ export default function FourGotTenMenu1({
       window.removeEventListener("cart-updated", handleCartUpdate)
     }
   }, [])
+
+  useEffect(() => {
+    getActiveRollouts().then((data: any) => {
+      const rollouts = data.rollouts || []
+      const now = new Date()
+      const active = rollouts.find((r: any) => {
+        const dropDate = new Date(r.drop_date)
+        return dropDate > now
+      })
+      setActiveRollout(active || null)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!activeRollout) {
+      setCountdown(null)
+      return
+    }
+
+    const updateCountdown = () => {
+      const now = new Date()
+      const dropDate = new Date(activeRollout.drop_date)
+      const diff = dropDate.getTime() - now.getTime()
+
+      if (diff <= 0) {
+        setCountdown(null)
+        return
+      }
+
+      setCountdown({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((diff % (1000 * 60)) / 1000),
+      })
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+
+    return () => clearInterval(interval)
+  }, [activeRollout])
   const triggerRef = useRef<HTMLDivElement | null>(null)
   const stickyOuterRef = useRef<HTMLDivElement | null>(null)
   const stickyInnerRef = useRef<HTMLDivElement | null>(null)
@@ -385,13 +435,28 @@ export default function FourGotTenMenu1({
         </div>
 
         <div className="mt-[8px] flex items-center gap-[8px]">
-          <div className="h-[26px] rounded-full bg-[#F1F1F1] px-[15px] text-[10px] tracking-[0.01em] text-black/70 flex items-center gap-[8px]">
-            <span>05d</span>
-            <span className="h-[8px] w-[1px] bg-black/20" />
-            <span className="text-black">12h</span>
-            <span className="h-[8px] w-[1px] bg-black/20" />
-            <span className="text-black">30s</span>
-          </div>
+          {activeRollout && countdown ? (
+            <div className="h-[26px] rounded-full bg-[#F1F1F1] px-[15px] text-[10px] tracking-[0.01em] text-black/70 flex items-center gap-[8px]">
+              <span>{String(countdown.days).padStart(2, "0")}d</span>
+              <span className="h-[8px] w-[1px] bg-black/20" />
+              <span className="text-black">
+                {String(countdown.hours).padStart(2, "0")}h
+              </span>
+              <span className="h-[8px] w-[1px] bg-black/20" />
+              <span className="text-black">
+                {String(countdown.minutes).padStart(2, "0")}m
+              </span>
+            </div>
+          ) : activeRollout && !countdown ? (
+            <div className="h-[26px] rounded-full bg-[#F1F1F1] px-[15px] text-[10px] tracking-[0.01em] text-black/70 flex items-center">
+              <span>Just Dropped</span>
+            </div>
+          ) : (
+            <div className="h-[26px] rounded-full gap-[4px] bg-[#F1F1F1] px-[15px] text-[10px] tracking-[0.01em] text-black/70 flex items-center">
+              <span className="text-nowrap">S5</span>
+              <span className="text-nowrap">V12</span>
+            </div>
+          )}
 
           <div className="flex flex-row gap-[8px] w-full justify-end">
             <div

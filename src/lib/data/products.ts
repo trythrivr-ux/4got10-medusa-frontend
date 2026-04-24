@@ -86,6 +86,85 @@ export const listProducts = async ({
 }
 
 /**
+ * Fetch products that are in active rollouts (announcement date has passed)
+ */
+export const listRolloutProducts = async ({
+  pageParam = 1,
+  queryParams,
+  countryCode,
+  regionId,
+}: {
+  pageParam?: number
+  queryParams?: any
+  countryCode?: string
+  regionId?: string
+}): Promise<{
+  response: { products: any[]; count: number }
+  nextPage: number | null
+}> => {
+  if (!countryCode && !regionId) {
+    throw new Error("Country code or region ID is required")
+  }
+
+  const limit = queryParams?.limit || 12
+  const _pageParam = Math.max(pageParam, 1)
+  const offset = _pageParam === 1 ? 0 : (_pageParam - 1) * limit
+
+  let region: any | undefined | null
+
+  if (countryCode) {
+    region = await getRegion(countryCode)
+  } else {
+    region = await retrieveRegion(regionId!)
+  }
+
+  if (!region) {
+    return {
+      response: { products: [], count: 0 },
+      nextPage: null,
+    }
+  }
+
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  const next = {
+    ...(await getCacheOptions("products")),
+  }
+
+  return sdk.client
+    .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      `/store/products`,
+      {
+        method: "GET",
+        query: {
+          limit,
+          offset,
+          region_id: region?.id,
+          fields:
+            "id,title,handle,subtitle,description,thumbnail,*images,*images.url,*options,*options.values,*variants.calculated_price,*variants.images,*variants.images.url,*variants.options,*variants.options.option,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+metadata,+tags",
+          ...queryParams,
+        },
+        headers,
+        next,
+        cache: "no-store",
+      }
+    )
+    .then(({ products, count }) => {
+      const nextPage = count > offset + limit ? pageParam + 1 : null
+
+      return {
+        response: {
+          products,
+          count,
+        },
+        nextPage: nextPage,
+      }
+    })
+}
+
+/**
  * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
  * It will then return the paginated products based on the page and limit parameters.
  */

@@ -5,28 +5,28 @@ import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Thumbnail from "../thumbnail"
 import PreviewPrice from "./price"
+import RolloutStatus from "./rollout-status"
 
 export default async function ProductPreview({
   product,
   isFeatured,
   region,
+  rolloutDates,
 }: {
   product: HttpTypes.StoreProduct
   isFeatured?: boolean
   region: HttpTypes.StoreRegion
+  rolloutDates?: {
+    drop_date?: string
+    sold_out_date?: string
+    announcement_date?: string
+  }
 }) {
-  // const pricedProduct = await listProducts({
-  //   regionId: region.id,
-  //   queryParams: { id: [product.id!] },
-  // }).then(({ response }) => response.products[0])
-
-  // if (!pricedProduct) {
-  //   return null
-  // }
-
   const { cheapestPrice } = getProductPrice({
     product,
   })
+
+  const productRolloutDates = rolloutDates || {}
 
   return (
     <LocalizedClientLink href={`/products/${product.handle}`} className="group">
@@ -45,6 +45,17 @@ export default async function ProductPreview({
             {cheapestPrice && <PreviewPrice price={cheapestPrice} />}
           </div>
         </div>
+        {productRolloutDates && (
+          <div className="mt-3">
+            <RolloutStatus
+              productId={product.id!}
+              productHandle={product.handle}
+              dropDate={productRolloutDates.drop_date}
+              soldOutDate={productRolloutDates.sold_out_date}
+              announcementDate={productRolloutDates.announcement_date}
+            />
+          </div>
+        )}
       </div>
     </LocalizedClientLink>
   )

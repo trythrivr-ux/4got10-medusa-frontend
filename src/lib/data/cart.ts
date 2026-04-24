@@ -15,6 +15,7 @@ import {
 } from "./cookies"
 import { getRegion } from "./regions"
 import { getLocale } from "@lib/data/locale-actions"
+import { getActiveRollouts } from "./rollouts"
 
 /**
  * Retrieves a cart by its ID. If no ID is provided, it will use the cart ID from the cookies.
@@ -38,7 +39,7 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     ...(await getCacheOptions("carts")),
   }
 
-  return await sdk.client
+  const cart = await sdk.client
     .fetch<HttpTypes.StoreCartResponse>(`/store/carts/${id}`, {
       method: "GET",
       query: {
@@ -50,6 +51,69 @@ export async function retrieveCart(cartId?: string, fields?: string) {
     })
     .then(({ cart }: { cart: HttpTypes.StoreCart }) => cart)
     .catch(() => null)
+
+  if (!cart) {
+    return null
+  }
+
+  // Check for sold-out products and remove them from cart
+  const rolloutsData = await getActiveRollouts()
+  const rollouts = (rolloutsData as any)?.rollouts || []
+  const now = new Date()
+
+  // Create a map of product IDs to their sold_out dates
+  const productSoldOutDates: Record<string, Date> = {}
+  for (const rollout of rollouts) {
+    const productIds = rollout.product_ids || []
+    if (rollout.sold_out_date) {
+      const soldOutDate = new Date(rollout.sold_out_date)
+      for (const productId of productIds) {
+        productSoldOutDates[productId] = soldOutDate
+      }
+    }
+  }
+
+  // Check each item in the cart
+  const itemsToRemove: string[] = []
+  for (const item of cart.items || []) {
+    const productId = item.variant?.product_id
+    if (productId && productSoldOutDates[productId]) {
+      const soldOutDate = productSoldOutDates[productId]
+      if (soldOutDate <= now) {
+        itemsToRemove.push(item.id)
+      }
+    }
+  }
+
+  // Remove sold-out items
+  if (itemsToRemove.length > 0) {
+    for (const itemId of itemsToRemove) {
+      try {
+        await sdk.store.cart.deleteLineItem(id, itemId, {}, headers)
+      } catch (error) {
+        console.error(`Failed to remove sold-out item ${itemId}:`, error)
+      }
+    }
+    // Revalidate cart cache after removing items
+    const cartCacheTag = await getCacheTag("carts")
+    revalidateTag(cartCacheTag)
+
+    // Fetch updated cart
+    return await sdk.client
+      .fetch<HttpTypes.StoreCartResponse>(`/store/carts/${id}`, {
+        method: "GET",
+        query: {
+          fields,
+        },
+        headers,
+        next,
+        cache: "no-store",
+      })
+      .then(({ cart }: { cart: HttpTypes.StoreCart }) => cart)
+      .catch(() => null)
+  }
+
+  return cart
 }
 
 export async function getOrSetCart(countryCode: string) {

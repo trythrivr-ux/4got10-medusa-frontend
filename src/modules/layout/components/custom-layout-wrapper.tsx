@@ -3,6 +3,7 @@
 import { useCustomLayout } from "@/context/custom-layout-context"
 import { useEffect, useState } from "react"
 import { HttpTypes } from "@medusajs/types"
+import { usePathname } from "next/navigation"
 
 export default function CustomLayoutWrapper({
   children,
@@ -13,6 +14,10 @@ export default function CustomLayoutWrapper({
 }) {
   const { customLayout } = useCustomLayout()
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+  const pathname = usePathname()
+
+  // Check if we're on the home page (e.g., "/us" or "/dk")
+  const isHomePage = pathname?.match(/^\/[a-z]{2}$/) !== null
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -44,11 +49,17 @@ export default function CustomLayoutWrapper({
       document.body.style.touchAction = "none"
       document.documentElement.style.overscrollBehavior = "none"
       document.documentElement.style.touchAction = "none"
+    } else if (isHomePage) {
+      // Prevent body scroll on home page since we have our own scroll container
+      document.body.style.overflow = "hidden"
+      document.documentElement.style.overflow = "hidden"
     } else {
       document.body.style.overscrollBehavior = ""
       document.body.style.touchAction = ""
       document.documentElement.style.overscrollBehavior = ""
       document.documentElement.style.touchAction = ""
+      document.body.style.overflow = ""
+      document.documentElement.style.overflow = ""
     }
 
     return () => {
@@ -56,14 +67,18 @@ export default function CustomLayoutWrapper({
       document.body.style.touchAction = ""
       document.documentElement.style.overscrollBehavior = ""
       document.documentElement.style.touchAction = ""
+      document.body.style.overflow = ""
+      document.documentElement.style.overflow = ""
     }
-  }, [customLayout])
+  }, [customLayout, isHomePage])
 
   return (
     <div
       className={` flex flex-col ${
         customLayout
           ? "h-screen w-screen fixed top-0 left-0 overflow-hidden touch-action-none overscroll-behavior-none"
+          : isHomePage
+          ? "h-screen w-full overflow-hidden"
           : "relative w-full min-h-screen"
       }`}
     >
@@ -77,14 +92,14 @@ export default function CustomLayoutWrapper({
           customLayout ? "pt-[env(safe-area-inset-top)]" : ""
         }`}
       >
-        {!customLayout && <FourGotTenMenu1 regions={regions} />}
+        {!customLayout && !isHomePage && <FourGotTenMenu1 regions={regions} />}
 
         <div
           className={` ${
             customLayout ? "px-[8px] pt-[8px]" : ""
           } bg-[#efefef] pb-[12px] rounded-[12px]`}
         >
-          <FourGotTenMenu regions={regions} cart={cart} />
+          {!isHomePage && <FourGotTenMenu regions={regions} cart={cart} />}
           {children}
           <div className="px-[12px] hidden pt-[12px]">
             <div className="flex rounded-[12px] bg-white h-[150px]"></div>

@@ -15,7 +15,6 @@ export const retrieveOrder = async (id: string) => {
 
   return sdk.client
     .fetch<any>(`/store/orders/${id}`, {
-      // Use any type to prevent Medusa imports during SSR
       method: "GET",
       query: {
         fields:
@@ -43,7 +42,7 @@ export const listOrders = async (
   }
 
   return sdk.client
-    .fetch<HttpTypes.StoreOrderListResponse>(`/store/orders`, {
+    .fetch<any>(`/store/orders`, {
       method: "GET",
       query: {
         limit,
@@ -64,13 +63,13 @@ export const createTransferRequest = async (
   state: {
     success: boolean
     error: string | null
-    order: HttpTypes.StoreOrder | null
+    order: any
   },
   formData: FormData
 ): Promise<{
   success: boolean
   error: string | null
-  order: HttpTypes.StoreOrder | null
+  order: any
 }> => {
   const id = formData.get("order_id") as string
 
@@ -80,15 +79,14 @@ export const createTransferRequest = async (
 
   const headers = await getAuthHeaders()
 
-  return await sdk.store.order
-    .requestTransfer(
-      id,
-      {},
-      {
+  return sdk.client
+    .fetch<{ order: any }>(`/store/orders/${id}/transfer/request`, {
+      method: "POST",
+      headers,
+      query: {
         fields: "id, email",
       },
-      headers
-    )
+    })
     .then(({ order }) => ({ success: true, error: null, order }))
     .catch((err) => ({ success: false, error: err.message, order: null }))
 }
@@ -96,8 +94,12 @@ export const createTransferRequest = async (
 export const acceptTransferRequest = async (id: string, token: string) => {
   const headers = await getAuthHeaders()
 
-  return await sdk.store.order
-    .acceptTransfer(id, { token }, {}, headers)
+  return sdk.client
+    .fetch<{ order: any }>(`/store/orders/${id}/transfer/accept`, {
+      method: "POST",
+      body: JSON.stringify({ token }),
+      headers,
+    })
     .then(({ order }) => ({ success: true, error: null, order }))
     .catch((err) => ({ success: false, error: err.message, order: null }))
 }
@@ -105,8 +107,12 @@ export const acceptTransferRequest = async (id: string, token: string) => {
 export const declineTransferRequest = async (id: string, token: string) => {
   const headers = await getAuthHeaders()
 
-  return await sdk.store.order
-    .declineTransfer(id, { token }, {}, headers)
+  return sdk.client
+    .fetch<{ order: any }>(`/store/orders/${id}/transfer/decline`, {
+      method: "POST",
+      body: JSON.stringify({ token }),
+      headers,
+    })
     .then(({ order }) => ({ success: true, error: null, order }))
     .catch((err) => ({ success: false, error: err.message, order: null }))
 }
