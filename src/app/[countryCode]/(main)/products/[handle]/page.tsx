@@ -3,11 +3,22 @@ import { notFound } from "next/navigation"
 import { listProducts } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
+import MagazineProductTemplate from "@modules/products/templates/magazine"
 import { HttpTypes } from "@medusajs/types"
 
 type Props = {
   params: Promise<{ countryCode: string; handle: string }>
   searchParams: Promise<{ v_id?: string }>
+}
+
+function isMagazineProduct(product: HttpTypes.StoreProduct): boolean {
+  return (
+    product.categories?.some((category) => {
+      const handle = category.handle?.toLowerCase() || ""
+      const name = category.name?.toLowerCase() || ""
+      return handle === "magazines" || name === "magazines"
+    }) || false
+  )
 }
 
 export async function generateStaticParams() {
@@ -111,7 +122,11 @@ export default async function ProductPage(props: Props) {
 
   const pricedProduct = await listProducts({
     countryCode: params.countryCode,
-    queryParams: { handle: params.handle },
+    queryParams: {
+      handle: params.handle,
+      fields:
+        "id,title,handle,subtitle,description,thumbnail,*images,*images.url,*categories,*options,*options.values,*variants.calculated_price,*variants.images,*variants.images.url,*variants.options,*variants.options.option,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+metadata,+tags",
+    },
   }).then(({ response }) => response.products[0])
 
   if (!pricedProduct) {
@@ -120,7 +135,16 @@ export default async function ProductPage(props: Props) {
 
   const images = getImagesForVariant(pricedProduct, selectedVariantId)
 
-  return (
+  const isMagazine = isMagazineProduct(pricedProduct)
+
+  return isMagazine ? (
+    <MagazineProductTemplate
+      product={pricedProduct}
+      region={region}
+      countryCode={params.countryCode}
+      images={images}
+    />
+  ) : (
     <ProductTemplate
       product={pricedProduct}
       region={region}

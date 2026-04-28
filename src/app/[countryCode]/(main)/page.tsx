@@ -9,6 +9,7 @@ import { HttpTypes } from "@medusajs/types"
 import CountdownTimer from "@/modules/products/components/countdown-timer"
 import Image from "next/image"
 import gsap from "gsap"
+import DeskScene from "@/modules/desk/components/desk-scene"
 
 export default function HomePage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -158,14 +159,14 @@ export default function HomePage() {
       className="h-screen w-full max-w-screen overflow-y-scroll snap-y snap-mandatory no-scrollbar"
     >
       {/* Snap 1: top menu */}
-      <div className="h-[calc(100vh-0px)] phone:h-[calc(100vh-18px)] pb-[8px] phone:pb-[12px] w-full snap-start flex items-center justify-center bg-white">
-        <div className="h-full bg-[#efefef] justify-center rounded-[12px] w-full items-center flex flex-col  snap-start relative">
+      <div className="relative h-[calc(100vh-0px)] phone:h-[calc(100vh-18px)] pb-[8px] phone:pb-[12px] w-full snap-start flex items-center justify-center bg-white">
+        <div className=" h-full bg-[#f2feff] rounded-[12px] w-full items-center flex flex-col snap-start relative p-4">
           {activeRollout && (
-            <div className="mt-4">
+            <div className="hidden mt-4">
               <CountdownTimer targetDate={new Date(activeRollout.drop_date)} />
             </div>
           )}
-          <div className="flex pb-[12px] items-start justify-between">
+          <div className="absolute top-0 left-0 right-0 bottom-0 pt-4 pb-[12px] z-10 flex items-center justify-between w-full px-[12px]">
             <div className="flex items-center h-[34px]">
               <Image
                 src="/menu-icons/4got10-2/4G.svg"
@@ -206,12 +207,17 @@ export default function HomePage() {
               />
             </div>
           </div>
+          <div className="flex-1 w-full flex items-center justify-center min-h-0">
+            <div className="w-full z-0 h-full">
+              <DeskScene />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Snap 2: page content */}
       <div className="min-h-screen bg-white w-full items-center flex flex-col gap-[8px] phone:gap-[12px] bg-transparent snap-start relative">
-        <div className="h-fit bg-[#efefef] rounded-[12px] w-full items-center flex flex-col snap-start relative">
+        <div className="h-fit bg-[#efefef] pt-[70 px] rounded-[12px] w-full items-center flex flex-col snap-start relative">
           <FourGotTenMenu
             regions={regions}
             cart={cart}
@@ -220,7 +226,7 @@ export default function HomePage() {
             isStuck={true}
           />
 
-          <div className="px-[8px] phone:px-[12px] flex flex-col py-[8px] phone:py-[12px] items-center gap-[8px] phone:gap-[12px] justify-center h-fit w-full">
+          <div className="px-[8px] rounded-[8px] phone:px-[12px] flex flex-col py-[8px] phone:py-[12px] items-center gap-[8px] phone:gap-[12px] justify-center h-fit w-full">
             <div className="rounded-[12px] bg-white w-full h-[300px]"></div>
 
             <div className="flex flex-row gap-[8px] phone:gap-[12px] w-full h-[800px]">

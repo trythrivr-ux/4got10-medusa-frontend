@@ -8,9 +8,11 @@ import { usePathname } from "next/navigation"
 export default function CustomLayoutWrapper({
   children,
   regions,
+  showBackButton,
 }: {
   children: React.ReactNode
   regions: any[]
+  showBackButton?: boolean
 }) {
   const { customLayout } = useCustomLayout()
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
@@ -18,6 +20,10 @@ export default function CustomLayoutWrapper({
 
   // Check if we're on the home page (e.g., "/us" or "/dk")
   const isHomePage = pathname?.match(/^\/[a-z]{2}$/) !== null
+
+  // Check if we're on a product detail page
+  const isProductPage =
+    pathname?.match(/^\/[a-z]{2}\/products\/[^/]+$/) !== null
 
   useEffect(() => {
     const fetchCart = async () => {
@@ -99,7 +105,13 @@ export default function CustomLayoutWrapper({
             customLayout ? "px-[8px] pt-[8px]" : ""
           } bg-[#efefef] pb-[12px] rounded-[12px]`}
         >
-          {!isHomePage && <FourGotTenMenu regions={regions} cart={cart} />}
+          {!isHomePage && (
+            <FourGotTenMenu
+              regions={regions}
+              cart={cart}
+              showBackButton={showBackButton || isProductPage}
+            />
+          )}
           {children}
           <div className="px-[12px] hidden pt-[12px]">
             <div className="flex rounded-[12px] bg-white h-[150px]"></div>

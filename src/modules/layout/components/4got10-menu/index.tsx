@@ -34,12 +34,14 @@ export default function FourGotTenMenu({
   scrollContainerRef,
   isStuck: externalIsStuck,
   isHomePage,
+  showBackButton,
 }: {
   regions: HttpTypes.StoreRegion[]
   cart: HttpTypes.StoreCart | null
   scrollContainerRef?: React.RefObject<HTMLElement>
   isStuck?: boolean
   isHomePage?: boolean
+  showBackButton?: boolean
 }) {
   const router = useRouter()
 
@@ -67,6 +69,7 @@ export default function FourGotTenMenu({
   const cartBoxRef = useRef<HTMLDivElement | null>(null)
   const expandedMenuContentRef = useRef<HTMLDivElement | null>(null)
   const pillsContainerRef = useRef<HTMLDivElement | null>(null)
+  const backButtonRef = useRef<HTMLDivElement | null>(null)
   const expandedPillsWidthRef = useRef<number | null>(null)
   const expandedMenuWidthRef = useRef<number | null>(null)
   const expandedCartWidthRef = useRef<number | null>(null)
@@ -209,14 +212,14 @@ export default function FourGotTenMenu({
   }, [scrollContainerRef, forcedHomeState2])
 
   useEffect(() => {
-    if (forcedHomeState2 && stickyOuterRef.current) {
-      // Initially hide the menu on home page (desktop only)
+    if (isHomePage && stickyOuterRef.current) {
+      // Initially hide the menu on home page (both desktop and mobile)
       gsap.set(stickyOuterRef.current, {
         y: -100,
         opacity: 0,
       })
     }
-  }, [forcedHomeState2])
+  }, [isHomePage])
 
   useLayoutEffect(() => {
     if (isHomePage && stickyInnerRef.current && stickyOuterRef.current) {
@@ -539,6 +542,26 @@ export default function FourGotTenMenu({
         0
       )
 
+      // Hide back button when menu expands
+      if (backButtonRef.current) {
+        tl.to(
+          backButtonRef.current,
+          {
+            opacity: 0,
+            duration: 0.25,
+            ease: "power2.out",
+          },
+          0
+        )
+        tl.set(
+          backButtonRef.current,
+          {
+            display: "none",
+          },
+          0.25
+        )
+      }
+
       tl.to(
         logoEls,
         {
@@ -826,6 +849,26 @@ export default function FourGotTenMenu({
           )
         }
       }
+
+      // Show back button when menu collapses
+      if (backButtonRef.current) {
+        tl.set(
+          backButtonRef.current,
+          {
+            display: "flex",
+          },
+          0.34
+        )
+        tl.to(
+          backButtonRef.current,
+          {
+            opacity: 1,
+            duration: 0.25,
+            ease: "power2.out",
+          },
+          0.34
+        )
+      }
     } else {
       tl.to(
         inner,
@@ -1100,6 +1143,47 @@ export default function FourGotTenMenu({
                 : "h-[52px]"
             }`}
           >
+            {showBackButton && (
+              <div
+                ref={backButtonRef}
+                data-fourgot10-nonpill="true"
+                onClick={() => router.back()}
+                className="w-[45px] phone:w-fit h-full rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] flex items-center justify-center cursor-pointer transition-all duration-250 ease-out "
+              >
+                {isSmallScreen ? (
+                  <svg
+                    className="mr-[5px]"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="black"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                ) : (
+                  <Pill>
+                    <svg
+                      className="mr-[5px]"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="black"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                    Back
+                  </Pill>
+                )}
+              </div>
+            )}
             <div
               ref={menuBoxRef}
               data-fourgot10-nonpill="true"
