@@ -8,9 +8,11 @@ import { HttpTypes } from "@medusajs/types"
 import { useParams, usePathname, useRouter } from "next/navigation"
 import { updateRegion, updateLineItem, deleteLineItem } from "@lib/data/cart"
 import { retrieveCustomer } from "@lib/data/customer"
+import { getActiveRollouts } from "@lib/data/rollouts"
 import HoverModal, { ModalB } from "@modules/common/components/hover-modal"
 import { MOBILE_MAX_WIDTH } from "@lib/breakpoints"
 import Link from "next/link"
+import { CountdownTimer } from "@/components/countdown-timer"
 
 const Pill = ({
   children,
@@ -76,8 +78,9 @@ export default function FourGotTenMenu({
   const expandedAccountNewsWidthRef = useRef<number | null>(null)
   const hasExpandedAnimatedRef = useRef(false)
   const prevIsMenuExpandedRef = useRef(false)
-  const logoLeftRef = useRef<HTMLDivElement | null>(null)
-  const logoRightRef = useRef<HTMLDivElement | null>(null)
+  const hasAnimatedInRef = useRef(false)
+  const logoLeftRef = useRef<HTMLDivElement>(null)
+  const logoRightRef = useRef<HTMLDivElement>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
 
   const [isSmallScreen, setIsSmallScreen] = useState(
@@ -92,7 +95,11 @@ export default function FourGotTenMenu({
   const [isCartScrolling, setIsCartScrolling] = useState(false)
   const cartScrollRef = useRef<HTMLDivElement | null>(null)
   const [customer, setCustomer] = useState<HttpTypes.StoreCustomer | null>(null)
-  const hasAnimatedInRef = useRef(false)
+  const [cartOpen, setCartOpen] = useState(false)
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const pathname = usePathname()
+  const [rolloutDropDate, setRolloutDropDate] = useState<Date | null>(null)
+  const [showCountdown, setShowCountdown] = useState(false)
 
   const forcedHomeState2 = isHomePage === true && !isSmallScreen
   const isStuck = forcedHomeState2 ? true : externalIsStuck ?? isStuckState
@@ -187,6 +194,67 @@ export default function FourGotTenMenu({
   }, [isMenuExpanded])
 
   useEffect(() => {
+    retrieveCustomer()
+      .then(setCustomer)
+      .catch(() => setCustomer(null))
+  }, [])
+
+  // Check for Magazine product page with rollout and future drop date
+  useEffect(() => {
+    const checkRollout = async () => {
+      console.log("Current pathname:", pathname) // Debug log
+
+      // Check if we're on a product page
+      if (!pathname.includes("/products/")) {
+        console.log("Not on product page") // Debug log
+        setRolloutDropDate(null)
+        setShowCountdown(false)
+        return
+      }
+
+      try {
+        const rolloutsData = (await getActiveRollouts()) as any
+        console.log("Rollouts data:", rolloutsData) // Debug log
+
+        // The response might have rollouts nested under a rollouts property
+        const rollouts = rolloutsData.rollouts || rolloutsData || []
+        console.log("Rollouts array:", rollouts) // Debug log
+        const now = new Date()
+        console.log("Current time:", now) // Debug log
+
+        // Find a rollout that has a future drop date
+        for (const rollout of rollouts) {
+          console.log("Checking rollout:", rollout) // Debug log
+
+          if (rollout.drop_date) {
+            const dropDate = new Date(rollout.drop_date)
+            console.log("Drop date:", dropDate, "Now:", now) // Debug log
+            console.log("Is future:", dropDate > now) // Debug log
+
+            // Check if drop date is in the future
+            if (dropDate > now) {
+              console.log("Found future rollout, showing countdown") // Debug log
+              setRolloutDropDate(dropDate)
+              setShowCountdown(true)
+              return
+            }
+          }
+        }
+
+        console.log("No future rollout found") // Debug log
+        setRolloutDropDate(null)
+        setShowCountdown(false)
+      } catch (error) {
+        console.error("Error checking rollouts:", error)
+        setRolloutDropDate(null)
+        setShowCountdown(false)
+      }
+    }
+
+    checkRollout()
+  }, [pathname])
+
+  useEffect(() => {
     if (forcedHomeState2) {
       setIsStuckState(true)
       return
@@ -228,7 +296,7 @@ export default function FourGotTenMenu({
       if (!isSmallScreen) {
         gsap.set(stickyInnerRef.current, {
           backgroundColor: "#FFFFFF",
-          paddingTop: 12,
+          paddingTop: 15,
           paddingBottom: 8,
           paddingLeft: 8,
           paddingRight: 8,
@@ -257,7 +325,8 @@ export default function FourGotTenMenu({
         }
         if (cartBoxRef.current) {
           gsap.set(cartBoxRef.current, {
-            clearProps: "width",
+            width: 142,
+            flex: "0 0 142px",
           })
         }
       } else {
@@ -412,7 +481,8 @@ export default function FourGotTenMenu({
       Boolean
     ) as HTMLElement[]
 
-    const stuckWidth = 675
+    const stuckWidth =
+      showCountdown && rolloutDropDate && !isMenuExpanded ? 475 : 675
     const stuckButtonWidth = 110
 
     if (expandedMenuWidthRef.current === null && menuBoxRef.current) {
@@ -729,9 +799,9 @@ export default function FourGotTenMenu({
         tl.to(
           cartBoxRef.current,
           {
-            width: expandedCartWidthRef.current ?? 142,
+            width: 142,
+            flex: "0 0 142px",
             duration: 0.32,
-            clearProps: "width",
           },
           0
         )
@@ -1042,7 +1112,7 @@ export default function FourGotTenMenu({
         ref={stickyOuterRef}
         className={`${
           isHomePage ? "fixed" : "sticky"
-        } rounded-[12px] items-center ${isHomePage ? "z-[9]" : "z-50"} ${
+        } rounded-[12px] items-center ${isHomePage ? "z-[9]" : "z-[19]"} ${
           isMenuExpanded
             ? `${
                 isHomePage
@@ -1061,9 +1131,9 @@ export default function FourGotTenMenu({
         }`}
       >
         <div
-          className={`bg-gradient-to-b from-[#efefef] to-transaprent rounded-[12.5px] absolute left-0 right-0 ${
-            !isHomePage ? "top-[12px]" : "top-[12px]"
-          } h-[100px] ${isMenuExpanded ? "" : ""}`}
+          className={`bg-gradient-to-b from-[#efefef] to-transaprent rounded-[10px] z-0 absolute left-0 right-0 h-[100px] transition-all duration-400 ease-out ${
+            forcedHomeState2 ? "top-[12px]" : "top-[0px]"
+          } ${isMenuExpanded ? "" : ""}`}
         ></div>
         {!isSmallScreen && (
           <div
@@ -1126,7 +1196,9 @@ export default function FourGotTenMenu({
             isHomePage
               ? "phone:py-[8px] phone:px-[8px] py-[0px] px-[0px]"
               : "py-[0px] px-[0px]"
-          } flex flex-col mx-auto will-change-[width] ${
+          } flex flex-col ${
+            hasAnimatedInRef.current ? "w-fit" : "mx-auto"
+          } will-change-[width] ${
             isStuck || isMenuExpanded
               ? isSmallScreen && isStuck && !isMenuExpanded
                 ? ""
@@ -1143,7 +1215,7 @@ export default function FourGotTenMenu({
                 : "h-[52px]"
             }`}
           >
-            {showBackButton && (
+            {showBackButton && !isStuck && (
               <div
                 ref={backButtonRef}
                 data-fourgot10-nonpill="true"
@@ -1188,36 +1260,50 @@ export default function FourGotTenMenu({
               ref={menuBoxRef}
               data-fourgot10-nonpill="true"
               onClick={() => setIsMenuExpanded((v) => !v)}
-              className={`flex-1 h-full rounded-[10px] bg-[#FFFFFF]  px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small ${
+              className={`h-full rounded-[10px] bg-[#FFFFFF]  px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small ${
                 isSmallScreen && isStuck && !isMenuExpanded
                   ? "shadow-[0_0_30px_rgba(239,239,239)]"
                   : ""
-              }`}
+              } ${isStuck && !isMenuExpanded ? "flex-1" : "min-w-[100px]"}`}
             >
               <div className="text-[12.5px] tracking-[0.01em]">Menu</div>
-              <div className="flex items-center gap-[6px]">
-                <div className="h-[10px] w-[1px] bg-black/15" />
-              </div>
+              <div className="h-[10px] w-[1px] bg-black/15" />
             </div>
             <div
               ref={pillsContainerRef}
               data-fourgot10-nonpill="true"
-              className="flex-[2] rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center gap-[6px] fourgot10-hide-on-small"
+              className={`${
+                showCountdown && rolloutDropDate && !isMenuExpanded && isStuck
+                  ? ""
+                  : "flex-[2]"
+              } rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center gap-[6px] fourgot10-hide-on-small`}
             >
-              <Pill>Shop</Pill>
-              <Pill>Magazine</Pill>
-              <Pill>Categories</Pill>
-              <Pill>Sale</Pill>
-              <Pill>Blog</Pill>
-              <Pill className="gap-[6px]">
-                <span>Search</span>
-                <Image
-                  src="/menu-icons/search.png"
-                  alt=""
-                  width={12}
-                  height={12}
+              {showCountdown &&
+              rolloutDropDate &&
+              !isMenuExpanded &&
+              isStuck ? (
+                <CountdownTimer
+                  dropDate={rolloutDropDate}
+                  className="w-[145px] justify-between"
                 />
-              </Pill>
+              ) : (
+                <>
+                  <Pill>Shop</Pill>
+                  <Pill>Magazine</Pill>
+                  <Pill>Categories</Pill>
+                  <Pill>Sale</Pill>
+                  <Pill>Blog</Pill>
+                  <Pill className="gap-[6px]">
+                    <span>Search</span>
+                    <Image
+                      src="/menu-icons/search.png"
+                      alt=""
+                      width={12}
+                      height={12}
+                    />
+                  </Pill>
+                </>
+              )}
             </div>
             <div
               ref={accountNewsRef}
@@ -1242,17 +1328,14 @@ export default function FourGotTenMenu({
             <div
               ref={cartBoxRef}
               data-fourgot10-nonpill="true"
-              className={`rounded-[10px] bg-[#FFFFFF] px-[12px] py-[9px] h-full flex items-center gap-[10px] justify-between fourgot10-full-width-on-small ${
+              className={`rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small ${
                 isSmallScreen && isStuck && !isMenuExpanded
                   ? "shadow-[0_0_30px_rgba(239,239,239)]"
                   : ""
-              }`}
+              } ${isStuck && !isMenuExpanded ? "flex-1" : "min-w-[100px]"}`}
             >
               <span className="text-[12.5px] tracking-[0.01em]">Cart</span>
-              <span className="text-[12.5px] tracking-[0.01em]">
-                {cart?.items?.reduce((acc, item) => acc + item.quantity, 0) ||
-                  0}
-              </span>
+              <div className="h-[10px] w-[1px] bg-black/15" />
             </div>
           </div>
 

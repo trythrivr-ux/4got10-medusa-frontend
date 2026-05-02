@@ -1,27 +1,42 @@
-"use client";
+"use client"
 
-import { OrbitControls, Sky } from "@react-three/drei";
-import { Physics } from "@react-three/cannon";
-import { Paper } from "./Paper";
+import { OrbitControls, Sky } from "@react-three/drei"
+import { Physics } from "@react-three/cannon"
+import { Paper } from "./Paper"
 
 interface ExperienceProps {
-  currentState?: number;
-  scrollProgress?: number;
-  bendAmount?: number;
-  frontCover?: string;
-  backCover?: string;
+  currentState?: number
+  scrollProgress?: number
+  bendAmount?: number
+  frontCover?: string
+  backCover?: string
+  onSceneReady?: () => void
 }
 
-export const Experience = ({ currentState, scrollProgress, bendAmount = 0, frontCover, backCover }: ExperienceProps) => {
+export const Experience = ({
+  currentState,
+  scrollProgress,
+  bendAmount = 0,
+  frontCover,
+  backCover,
+  onSceneReady,
+}: ExperienceProps) => {
   return (
     <>
       {/* Sky removed for transparent background */}
-      
+
       <Physics gravity={[0, -9.81, 0]} iterations={10}>
-        <Paper currentState={currentState} scrollProgress={scrollProgress} bendAmount={bendAmount} frontCover={frontCover} backCover={backCover} />
+        <Paper
+          currentState={currentState}
+          scrollProgress={scrollProgress}
+          bendAmount={bendAmount}
+          frontCover={frontCover}
+          backCover={backCover}
+          onSceneReady={onSceneReady}
+        />
       </Physics>
       {/* <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} /> */}
-      
+
       {/* Enhanced lighting setup */}
       <directionalLight
         position={[5, 8, 5]}
@@ -36,26 +51,22 @@ export const Experience = ({ currentState, scrollProgress, bendAmount = 0, front
         shadow-camera-bottom={-5}
         shadow-bias={-0.0001}
       />
-      
+
       <directionalLight
         position={[-3, 4, -3]}
         intensity={1.5}
         color="#b3d9ff"
       />
-      
-      <directionalLight
-        position={[0, 2, -5]}
-        intensity={1}
-        color="#ffffff"
-      />
-      
+
+      <directionalLight position={[0, 2, -5]} intensity={1} color="#ffffff" />
+
       <ambientLight intensity={0.4} color="#ffffff" />
-      
+
       <hemisphereLight
         args={["#87CEEB", "#ffffff", 0.6]}
         position={[0, 10, 0]}
       />
-      
+
       <directionalLight
         position={[0, 3, 2]}
         intensity={4}
@@ -71,7 +82,7 @@ export const Experience = ({ currentState, scrollProgress, bendAmount = 0, front
         shadow-camera-far={10}
         shadow-bias={-0.0001}
       />
-      
+
       <directionalLight
         position={[-2, 2, 1]}
         intensity={1.5}
@@ -80,8 +91,8 @@ export const Experience = ({ currentState, scrollProgress, bendAmount = 0, front
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
       />
-      
+
       <ambientLight intensity={0.2} />
     </>
-  );
-};
+  )
+}

@@ -1,9 +1,15 @@
 "use client"
 
-import { Canvas, useThree, useFrame } from "@react-three/fiber"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Suspense, useRef, useMemo, useState, useEffect } from "react"
 import * as THREE from "three"
-import { OrbitControls, Environment, useTexture } from "@react-three/drei"
+import {
+  OrbitControls,
+  Environment,
+  Cloud,
+  Clouds,
+  useTexture,
+} from "@react-three/drei"
 
 const PAGE_WIDTH = 1.28
 const PAGE_HEIGHT = 1.71
@@ -11,6 +17,16 @@ const PAGE_DEPTH = 0.003
 const PAGE_SEGMENTS = 30
 const SEGMENT_WIDTH = PAGE_WIDTH / PAGE_SEGMENTS
 const NUM_PAGES = 6
+
+const CAMERA_POSITION: [number, number, number] = (() => {
+  const from = new THREE.Vector3(-2.73, -1.979, 10.048)
+  const to = new THREE.Vector3(-0.13, 0.384, 0.949)
+  const dir = new THREE.Vector3().subVectors(from, to).multiplyScalar(0.92)
+  return [to.x + dir.x, to.y + dir.y, to.z + dir.z] as [number, number, number]
+})()
+const CAMERA_TARGET: [number, number, number] = [-0.13, 0.384, 0.949]
+const CAMERA_FOV = 30
+const ORBIT_TARGET: [number, number, number] = [-0.13, 0.384, 0.949]
 
 // Create page geometry with bones for page curl effect
 const createPageGeometry = () => {
@@ -53,12 +69,80 @@ const createPageGeometry = () => {
 interface DeskMagazineProps {
   frontCover?: string
   backCover?: string
+  scrollProgressRef?: React.MutableRefObject<number>
 }
 
-const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
+const DeskMagazine = ({
+  frontCover,
+  backCover,
+  scrollProgressRef,
+}: DeskMagazineProps) => {
   const groupRef = useRef<THREE.Group>(null)
   const pagesRef = useRef<THREE.Group[]>([])
   const dampedBendRef = useRef(0)
+  const hasInitDropRef = useRef(false)
+  const [animateIn, setAnimateIn] = useState(true)
+  const [visible, setVisible] = useState(true)
+
+  // Create reflective spheres around the magazine
+  const spheres = useMemo(() => {
+    return Array.from({ length: 8 }, (_, i) => {
+      const angle = (i / 8) * Math.PI * 2
+      const radius = 3.5
+      const x = Math.cos(angle) * radius
+      const z = Math.sin(angle) * radius
+      const y = Math.random() * 2 - 1
+
+      const material = new THREE.MeshStandardMaterial({
+        metalness: 0.9,
+        roughness: 0.1,
+        envMapIntensity: 2.0,
+        color: new THREE.Color().setHSL(Math.random() * 0.1 + 0.55, 0.7, 0.8),
+      })
+
+      const geometry = new THREE.SphereGeometry(0.15, 32, 16)
+      const sphere = new THREE.Mesh(geometry, material)
+      sphere.position.set(x, y, z)
+      sphere.castShadow = true
+      sphere.receiveShadow = true
+
+      return sphere
+    })
+  }, [])
+
+  const finalPos = useMemo(
+    () =>
+      new THREE.Vector3(CAMERA_TARGET[0], CAMERA_TARGET[1], CAMERA_TARGET[2]),
+    []
+  )
+  const startPos = useMemo(
+    () =>
+      new THREE.Vector3(
+        CAMERA_TARGET[0],
+        CAMERA_TARGET[1] - 12,
+        CAMERA_TARGET[2]
+      ),
+    []
+  )
+
+  useEffect(() => {
+    const key = "desk_magazine_intro_done"
+    try {
+      const done = window.sessionStorage.getItem(key)
+      if (done) {
+        setAnimateIn(false)
+        hasInitDropRef.current = true
+        if (groupRef.current) groupRef.current.position.copy(finalPos)
+      } else {
+        window.sessionStorage.setItem(key, "1")
+        setAnimateIn(true)
+        hasInitDropRef.current = false
+        if (groupRef.current) groupRef.current.position.copy(startPos)
+      }
+    } catch {
+      // ignore
+    }
+  }, [finalPos])
 
   // Create grain texture
   const grainTexture = useMemo(() => {
@@ -67,11 +151,9 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
     canvas.height = 512
     const ctx = canvas.getContext("2d")!
 
-    // Fill with mid-grey
     ctx.fillStyle = "#808080"
     ctx.fillRect(0, 0, 512, 512)
 
-    // Add noise
     const imageData = ctx.getImageData(0, 0, 512, 512)
     const data = imageData.data
     for (let i = 0; i < data.length; i += 4) {
@@ -103,19 +185,43 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
 
       const material = new THREE.MeshStandardMaterial({
         side: THREE.DoubleSide,
-        roughness: 0.6,
-        metalness: 0.8,
-        envMapIntensity: 0.3,
+        roughness: 0.55,
+        metalness: 0.15,
+        envMapIntensity: 0.6,
         bumpMap: grainTexture,
-        bumpScale: 0.02,
+        bumpScale: 0.015,
+        color: new THREE.Color("#ffffff"),
       })
 
       const loader = new THREE.TextureLoader()
-      const texture = loader.load(texturePath, () => {
-        texture.colorSpace = THREE.SRGBColorSpace
-        material.map = texture
-        material.needsUpdate = true
-      })
+      loader.load(
+        texturePath,
+        (loadedTexture) => {
+          loadedTexture.colorSpace = THREE.SRGBColorSpace
+          material.map = loadedTexture
+          material.needsUpdate = true
+        },
+        undefined,
+        (error) => {
+          console.warn(`Failed to load texture: ${texturePath}`, error)
+          const canvas = document.createElement("canvas")
+          canvas.width = 512
+          canvas.height = 512
+          const ctx = canvas.getContext("2d")
+          if (ctx) {
+            ctx.fillStyle = "#ffffff"
+            ctx.fillRect(0, 0, 512, 512)
+            ctx.fillStyle = "#333333"
+            ctx.font = "32px Arial"
+            ctx.textAlign = "center"
+            ctx.fillText("Cover Image", 256, 256)
+          }
+          const fallbackTexture = new THREE.CanvasTexture(canvas)
+          fallbackTexture.colorSpace = THREE.SRGBColorSpace
+          material.map = fallbackTexture
+          material.needsUpdate = true
+        }
+      )
 
       const bones: THREE.Bone[] = []
       for (let j = 0; j <= PAGE_SEGMENTS; j++) {
@@ -135,31 +241,71 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
       const geometry = createPageGeometry()
 
       const mesh = new THREE.SkinnedMesh(geometry, material)
-      mesh.castShadow = true
-      mesh.receiveShadow = true
       mesh.frustumCulled = false
       mesh.add(skeleton.bones[0])
       mesh.bind(skeleton)
 
       return { mesh, skeleton }
     })
-  }, [frontCover, backCover])
+  }, [frontCover, backCover, grainTexture])
 
-  // Animation - magazine laying flat with slight bend
   useFrame((state, delta) => {
     if (!groupRef.current) return
 
-    // Continuous spin around world Y-axis (fixed vertical axis, regardless of tilt)
     groupRef.current.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), delta * 0.3)
 
-    // Fixed bend amount - magazine stays slightly bent open
-    const bend = 0.05
+    if (animateIn && !hasInitDropRef.current) {
+      groupRef.current.position.copy(startPos)
+      hasInitDropRef.current = true
+    }
+
+    const scrollP = scrollProgressRef?.current ?? 0
+    const scrollYOffset = -scrollP * 9.5
+
+    const shouldBeVisible = scrollP <= 0.8
+    if (shouldBeVisible !== visible) {
+      setVisible(shouldBeVisible)
+    }
+
+    groupRef.current.position.x = THREE.MathUtils.damp(
+      groupRef.current.position.x,
+      finalPos.x,
+      3.8,
+      delta
+    )
+    groupRef.current.position.y = THREE.MathUtils.damp(
+      groupRef.current.position.y,
+      finalPos.y + scrollYOffset,
+      3.8,
+      delta
+    )
+    groupRef.current.position.z = THREE.MathUtils.damp(
+      groupRef.current.position.z,
+      finalPos.z,
+      3.8,
+      delta
+    )
+
+    groupRef.current.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const material = child.material as THREE.MeshStandardMaterial
+        const targetOpacity = visible ? 1 : 0
+        material.opacity = THREE.MathUtils.damp(
+          material.opacity || 1,
+          targetOpacity,
+          5,
+          delta
+        )
+        material.transparent = targetOpacity < 1
+        material.needsUpdate = true
+      }
+    })
+
+    const bend = 0.15
     dampedBendRef.current = bend
 
-    // Fixed page flip progress - more open, one side lifted up
-    const flipProgress = 0.008
+    const flipProgress = 0.02
 
-    // Per-page window size
     const pageWindowSize = (idx: number) => {
       const center = (NUM_PAGES - 1) / 2
       const dist = Math.abs(idx - center) / center
@@ -173,10 +319,10 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
       const group = pagesRef.current[index]
       if (!group) return
 
-      // Sequential flip timing
       let pageStart = 0
-      for (let i = 0; i < index; i++)
+      for (let i = 0; i < index; i++) {
         pageStart += pageWindowSize(i) / totalWeight
+      }
       const pageRange = pageWindowSize(index) / totalWeight
 
       const rawT = Math.max(
@@ -185,16 +331,13 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
       )
       const pageT = 0.5 * (1 - Math.cos(Math.PI * rawT))
 
-      // Rotation
       group.rotation.y = -pageT * Math.PI
 
-      // Z-stacking
       const gap = PAGE_DEPTH * 0.5
       const unflippedZ = (NUM_PAGES - 1 - index) * gap
       const flippedZ = index * gap
       group.position.z = THREE.MathUtils.lerp(unflippedZ, flippedZ, pageT)
 
-      // Bone bending - fixed curl
       const bones = page.skeleton.bones
       const midFlip = Math.sin(pageT * Math.PI)
       const bendIntensity = midFlip * 0.05
@@ -214,11 +357,30 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
   return (
     <group
       ref={groupRef}
-      position={[0, 1.9, 0]} // Higher up on display pedestal
-      rotation={[-Math.PI / -1.09, 3.8, 3]} // Lay flat
-      scale={[1.55, 1.55, 1.55]}
-      castShadow
-      receiveShadow
+      position={
+        animateIn
+          ? ([startPos.x, startPos.y, startPos.z] as [number, number, number])
+          : ([finalPos.x, finalPos.y, finalPos.z] as [number, number, number])
+      }
+      rotation={(() => {
+        const cameraPos = new THREE.Vector3(...CAMERA_POSITION)
+        const magazinePos = animateIn ? startPos : finalPos
+
+        const direction = new THREE.Vector3()
+          .subVectors(cameraPos, magazinePos)
+          .normalize()
+
+        const rotation = new THREE.Euler()
+        rotation.setFromQuaternion(
+          new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 0, 1),
+            direction
+          )
+        )
+
+        return [rotation.x, rotation.y, rotation.z] as [number, number, number]
+      })()}
+      scale={[1.395, 1.395, 1.395]}
     >
       {pages.map((page, index) => {
         const gap = PAGE_DEPTH * 0.5
@@ -239,7 +401,162 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
   )
 }
 
-// Interactive plane that responds to mouse like being pushed by hand
+const SkySphere = ({
+  url = "/textures/sky.jpg",
+  radius = 5.5,
+}: {
+  url?: string
+  radius?: number
+}) => {
+  const texture = useTexture(url)
+
+  useMemo(() => {
+    texture.colorSpace = THREE.SRGBColorSpace
+  }, [texture])
+
+  return (
+    <mesh position={[0, 0, 0]}>
+      <sphereGeometry args={[radius, 48, 48]} />
+      <meshBasicMaterial
+        map={texture}
+        side={THREE.BackSide}
+        transparent
+        opacity={0.5}
+      />
+    </mesh>
+  )
+}
+
+const AtmosphereSphere = ({
+  radius = 5.2,
+  innerColor = "#E9F1F7",
+  outerColor = "#E9F1F7",
+}: {
+  radius?: number
+  innerColor?: string
+  outerColor?: string
+}) => {
+  const inner = useMemo(() => new THREE.Color(innerColor), [innerColor])
+  const outer = useMemo(() => new THREE.Color(outerColor), [outerColor])
+
+  const uniforms = useMemo(
+    () => ({
+      uInnerColor: { value: inner },
+      uOuterColor: { value: outer },
+      uInner: { value: 0.0 },
+      uOuter: { value: 1.0 },
+    }),
+    [inner, outer]
+  )
+
+  const vertexShader = useMemo(
+    () => `
+      varying vec3 vWorldDir;
+
+      void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vWorldDir = normalize(worldPos.xyz);
+        gl_Position = projectionMatrix * viewMatrix * worldPos;
+      }
+    `,
+    []
+  )
+
+  const fragmentShader = useMemo(
+    () => `
+      uniform vec3 uInnerColor;
+      uniform vec3 uOuterColor;
+      uniform float uInner;
+      uniform float uOuter;
+      varying vec3 vWorldDir;
+
+      void main() {
+        vec3 dir = normalize(vWorldDir);
+        vec3 centerDir = vec3(0.0, 0.0, -1.0);
+        float angle = acos(clamp(dot(dir, centerDir), -1.0, 1.0));
+
+        float t = smoothstep(uInner, uOuter, angle);
+        vec3 color = mix(uInnerColor, uOuterColor, t);
+        float alpha = 1.0 - t;
+
+        gl_FragColor = vec4(color, alpha);
+      }
+    `,
+    []
+  )
+
+  return (
+    <mesh position={[0, 0, 0]} rotation={[-2, Math.PI, -1]}>
+      <sphereGeometry args={[radius, 48, 48]} />
+      <shaderMaterial
+        uniforms={uniforms}
+        vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
+        transparent
+        side={THREE.BackSide}
+        depthWrite={false}
+      />
+    </mesh>
+  )
+}
+
+const SimpleCloud = ({
+  position = [0, 0, 0],
+  scale = [4.8, 2.8, 1],
+  rotation = [0, 0, 0],
+  opacity = 0.95,
+}: {
+  position?: [number, number, number]
+  scale?: [number, number, number]
+  rotation?: [number, number, number]
+  opacity?: number
+}) => {
+  const texture = useTexture("/textures/smoke-soft.png")
+
+  useMemo(() => {
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.wrapS = THREE.ClampToEdgeWrapping
+    texture.wrapT = THREE.ClampToEdgeWrapping
+    texture.needsUpdate = true
+  }, [texture])
+
+  return (
+    <group position={position} scale={scale as any} rotation={rotation}>
+      <mesh rotation={[0, 0, 0]}>
+        <planeGeometry args={[3.6, 2.5]} />
+        <meshBasicMaterial
+          map={texture}
+          color="#ffffff"
+          transparent
+          opacity={opacity}
+          depthWrite={false}
+          alphaTest={0.0}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+const MagazineClouds = () => {
+  return (
+    <group position={[CAMERA_TARGET[0], -1.9, 1.5]}>
+      <SimpleCloud
+        position={[3, 0, 0]}
+        scale={[2, 1, 0.3]}
+        opacity={0.9}
+        rotation={[0, Math.PI / 1.2, -3.5]}
+      />
+      <SimpleCloud
+        position={[-3, 0, 0]}
+        scale={[2, 1, 0.3]}
+        opacity={0.9}
+        rotation={[3.5, Math.PI / -1, -0.3]}
+      />
+    </group>
+  )
+}
+
 interface InteractivePlaneProps {
   initialPosition: [number, number, number]
   size: [number, number]
@@ -267,35 +584,25 @@ const InteractivePlane = ({
     const mousePos = mousePosition.current
     const mouseVel = mouseVelocity.current
 
-    // Calculate distance to mouse
     const distance = mesh.position.distanceTo(mousePos)
-    const pushRadius = 0.3 // Very small - only when directly over
+    const pushRadius = 0.3
 
     if (distance < pushRadius) {
-      // Push in the direction of mouse movement (like a hand sweeping)
-      const pushStrength = (1 - distance / pushRadius) * 0.15 // Much less force
+      const pushStrength = (1 - distance / pushRadius) * 0.15
 
-      // Add mouse velocity to plane velocity (hand push effect)
       velocityRef.current.x += mouseVel.x * pushStrength
       velocityRef.current.z += mouseVel.z * pushStrength
 
-      // Also add some perpendicular push based on proximity
       const toPlane = new THREE.Vector3()
         .subVectors(mesh.position, mousePos)
         .normalize()
       velocityRef.current.add(toPlane.multiplyScalar(pushStrength * 0.1))
     }
 
-    // Apply friction (slows down over time like paper on desk)
     velocityRef.current.multiplyScalar(0.92)
-
-    // Update position
     mesh.position.add(velocityRef.current)
-
-    // Lock Y position - planes always stay flat on table
     mesh.position.y = 0.01
 
-    // Boundary constraints - keep inside a 4x4 box
     const boundarySize = 2
     mesh.position.x = Math.max(
       -boundarySize,
@@ -306,8 +613,6 @@ const InteractivePlane = ({
       Math.min(boundarySize, mesh.position.z)
     )
 
-    // Slight tilt based on velocity (on top of flat rotation)
-    // Base rotation is flat, we just add small wobble
     mesh.rotation.x = -Math.PI / 2 + velocityRef.current.z * 0.1
     mesh.rotation.z = velocityRef.current.x * 0.1
   })
@@ -329,7 +634,6 @@ const InteractivePlane = ({
   )
 }
 
-// All interactive planes
 const InteractivePlanes = ({
   mousePosition,
   mouseVelocity,
@@ -337,126 +641,27 @@ const InteractivePlanes = ({
   mousePosition: React.MutableRefObject<THREE.Vector3>
   mouseVelocity: React.MutableRefObject<THREE.Vector3>
 }) => {
-  const planes = useMemo(() => {
-    const items: {
-      position: [number, number, number]
-      size: [number, number]
-      color: string
-      rotation: number
-    }[] = []
-
-    // Generate planes around the magazine
-    const colors = [
-      "#e8e8e8",
-      "#d4d4d4",
-      "#c8c8c8",
-      "#bcbcbc",
-      "#b0b0b0",
-      "#a4a4a4",
-    ]
-
-    // Magazine dimensions for collision check
-    const magazineWidth = 1.28
-    const magazineHeight = 1.71
-
-    // Create fewer planes scattered randomly
-    const numPlanes = 15
-    const boundarySize = 1.8
-
-    for (let i = 0; i < numPlanes; i++) {
-      let posX: number, posZ: number
-      let attempts = 0
-
-      // Find position not under magazine
-      do {
-        posX = (Math.random() - 0.5) * boundarySize * 2
-        posZ = (Math.random() - 0.5) * boundarySize * 2
-        attempts++
-      } while (
-        // Check if position is under magazine (smaller exclusion zone)
-        Math.abs(posX) < magazineWidth * 0.4 &&
-        Math.abs(posZ) < magazineHeight * 0.4 &&
-        attempts < 50
-      )
-
-      const sizeX = 0.2 + Math.random() * 0.5
-      const sizeZ = 0.2 + Math.random() * 0.5
-      const color = colors[Math.floor(Math.random() * colors.length)]
-      const rotation = Math.random() * Math.PI * 2 // Random Y rotation
-
-      items.push({
-        position: [posX, 0.01, posZ],
-        size: [sizeX, sizeZ],
-        color,
-        rotation,
-      })
-    }
-
-    return items
-  }, [])
-
-  return (
-    <>
-      {planes.map((plane, index) => (
-        <InteractivePlane
-          key={index}
-          initialPosition={plane.position}
-          size={plane.size}
-          color={plane.color}
-          rotation={plane.rotation}
-          mousePosition={mousePosition}
-          mouseVelocity={mouseVelocity}
-        />
-      ))}
-    </>
-  )
-}
-
-// Mouse tracker component - tracks position AND velocity
-const MouseTracker = ({
-  mousePosition,
-  mouseVelocity,
-}: {
-  mousePosition: React.MutableRefObject<THREE.Vector3>
-  mouseVelocity: React.MutableRefObject<THREE.Vector3>
-}) => {
-  const { camera, gl } = useThree()
-  const raycaster = useRef(new THREE.Raycaster())
-  const plane = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0))
-  const lastPosition = useRef(new THREE.Vector3())
-
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      const rect = gl.domElement.getBoundingClientRect()
-      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-
-      raycaster.current.setFromCamera(new THREE.Vector2(x, y), camera)
-      const intersectPoint = new THREE.Vector3()
-      raycaster.current.ray.intersectPlane(plane.current, intersectPoint)
-
-      if (intersectPoint) {
-        // Calculate velocity (difference between current and last position)
-        mouseVelocity.current.subVectors(intersectPoint, lastPosition.current)
-
-        // Update position
-        mousePosition.current.copy(intersectPoint)
-        lastPosition.current.copy(intersectPoint)
-      }
-    }
-
-    gl.domElement.addEventListener("mousemove", handleMouseMove)
-    return () => gl.domElement.removeEventListener("mousemove", handleMouseMove)
-  }, [camera, gl, mousePosition, mouseVelocity])
-
   return null
 }
 
-// Image scene component - displays a real photograph as the environment
 const ImageScene = ({ imageUrl }: { imageUrl: string }) => {
   const texture = useMemo(() => {
     const loader = new THREE.TextureLoader()
-    const tex = loader.load(imageUrl)
+
+    if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+      loader.setCrossOrigin("anonymous")
+    }
+
+    const tex = loader.load(
+      imageUrl,
+      (loadedTexture) => {
+        loadedTexture.colorSpace = THREE.SRGBColorSpace
+      },
+      undefined,
+      (error) => {
+        console.warn(`Failed to load image texture: ${imageUrl}`, error)
+      }
+    )
     tex.colorSpace = THREE.SRGBColorSpace
     return tex
   }, [imageUrl])
@@ -469,15 +674,57 @@ const ImageScene = ({ imageUrl }: { imageUrl: string }) => {
   )
 }
 
-// Surface plane for the magazine to sit on
+const StudioBackdrop = () => {
+  return null
+}
+
+const CameraSetup = ({
+  position,
+  target,
+  fov,
+}: {
+  position: [number, number, number]
+  target: [number, number, number]
+  fov: number
+}) => {
+  const { camera } = useThree()
+
+  useEffect(() => {
+    camera.position.set(...position)
+    camera.lookAt(...target)
+    ;(camera as THREE.PerspectiveCamera).fov = fov
+    ;(camera as THREE.PerspectiveCamera).updateProjectionMatrix()
+  }, [camera, fov, position, target])
+
+  return null
+}
+
+const CameraLockedMagazine = ({
+  scrollProgressRef,
+  frontCover,
+  backCover,
+}: {
+  scrollProgressRef: React.MutableRefObject<number>
+  frontCover?: string
+  backCover?: string
+}) => {
+  return (
+    <DeskMagazine
+      scrollProgressRef={scrollProgressRef}
+      frontCover={frontCover}
+      backCover={backCover}
+    />
+  )
+}
+
 const SurfacePlane = () => {
   return (
-    <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+    <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry args={[6, 6]} />
       <meshStandardMaterial
         color="#c0c0c0"
         roughness={0.8}
-        metalness={0.1}
+        metalness={0.2}
         transparent
         opacity={0.0}
       />
@@ -485,728 +732,273 @@ const SurfacePlane = () => {
   )
 }
 
-// Load concrete textures - shared across components
-const useConcreteTextures = () => {
-  const [textures, setTextures] = useState<{
-    diffuse: THREE.Texture | null
-    normal: THREE.Texture | null
-    aoRoughMetal: THREE.Texture | null
-  }>({
-    diffuse: null,
-    normal: null,
-    aoRoughMetal: null,
-  })
-
-  useEffect(() => {
-    const loader = new THREE.TextureLoader()
-
-    const loadTexture = (path: string, repeat: number = 4) => {
-      return new Promise<THREE.Texture>((resolve) => {
-        loader.load(path, (texture) => {
-          texture.colorSpace = THREE.SRGBColorSpace
-          texture.wrapS = THREE.RepeatWrapping
-          texture.wrapT = THREE.RepeatWrapping
-          texture.repeat.set(repeat, repeat)
-          resolve(texture)
-        })
-      })
-    }
-
-    Promise.all([
-      loadTexture("/textures/concrete_diffuse.jpg", 4),
-      loadTexture("/textures/concrete_normal.jpg", 4),
-      loadTexture("/textures/concrete_ao_rough_metal.jpg", 4),
-    ]).then(([diffuse, normal, aoRoughMetal]) => {
-      setTextures({ diffuse, normal, aoRoughMetal })
-    })
-  }, [])
-
-  return textures
-}
-
-// Concrete floor with realistic textures
-const ConcreteFloor = () => {
-  const textures = useConcreteTextures()
-
-  if (!textures.diffuse || !textures.normal || !textures.aoRoughMetal) {
-    return (
-      <mesh
-        position={[0, -0.01, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[30, 30]} />
-        <meshStandardMaterial color="#808080" roughness={0.9} />
-      </mesh>
-    )
-  }
-
-  return (
-    <mesh
-      position={[0, -0.01, 0]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      receiveShadow
-    >
-      <planeGeometry args={[30, 30]} />
-      <meshStandardMaterial
-        map={textures.diffuse}
-        normalMap={textures.normal}
-        aoMap={textures.aoRoughMetal}
-        roughnessMap={textures.aoRoughMetal}
-        metalness={0}
-        aoMapIntensity={1}
-        normalScale={new THREE.Vector2(1, 1)}
-        roughness={1}
-      />
-    </mesh>
-  )
-}
-
-// Ground plane that receives shadows
-const GroundPlane = () => {
-  return (
-    <mesh
-      position={[0, -0.01, 0]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      receiveShadow
-    >
-      <planeGeometry args={[500, 30]} />
-      <shadowMaterial opacity={0.6} />
-    </mesh>
-  )
-}
-
-// Photography Studio Backdrop with infinity curve
-const StudioBackdrop = () => {
-  return null
-}
-
-// Custom high-quality shadow mesh for the magazine
-const MagazineShadow = () => {
-  // Create gradient texture for soft shadow edges
-  const shadowTexture = useMemo(() => {
-    const canvas = document.createElement("canvas")
-    canvas.width = 512
-    canvas.height = 512
-    const ctx = canvas.getContext("2d")!
-
-    // Create radial gradient for soft edges
-    const gradient = ctx.createRadialGradient(256, 256, 0, 256, 256, 256)
-    gradient.addColorStop(0, "rgba(0, 0, 0, 0.4)")
-    gradient.addColorStop(0.5, "rgba(0, 0, 0, 0.2)")
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0)")
-
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, 512, 512)
-
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.needsUpdate = true
-    return texture
-  }, [])
-
-  return (
-    <mesh
-      position={[0.1, 0.001, 0]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      receiveShadow
-    >
-      <planeGeometry args={[1.5, 2]} />
-      <meshBasicMaterial
-        map={shadowTexture}
-        transparent
-        opacity={0.6}
-        depthWrite={false}
-      />
-    </mesh>
-  )
-}
-
-// Display pedestal for the magazine - with concrete texture
-const DisplayPedestalWithTexture = () => {
-  const diffuseMap = useTexture("/textures/concrete_diffuse.jpg")
-  const normalMap = useTexture("/textures/concrete_normal.jpg")
-  const aoRoughMetalMap = useTexture("/textures/concrete_ao_rough_metal.jpg")
-
-  // Create 3D noise texture with smooth edges
-  const macroBump = useMemo(() => {
-    const canvas = document.createElement("canvas")
-    canvas.width = 1024
-    canvas.height = 1024
-    const ctx = canvas.getContext("2d")!
-
-    // Fill with base grey
-    ctx.fillStyle = "#808080"
-    ctx.fillRect(0, 0, 1024, 1024)
-
-    const imageData = ctx.getImageData(0, 0, 1024, 1024)
-    const data = imageData.data
-
-    // Edge falloff distance (in UV space 0-1)
-    const edgeFade = 0.15
-
-    // Create noise pattern with smooth edges
-    for (let y = 0; y < 1024; y++) {
-      for (let x = 0; x < 1024; x++) {
-        const i = (y * 1024 + x) * 4
-
-        // Normalized coordinates 0-1
-        const u = x / 1024
-        const v = y / 1024
-
-        // Calculate edge distance and fade
-        const edgeDistU = Math.min(u, 1 - u)
-        const edgeDistV = Math.min(v, 1 - v)
-        const edgeDist = Math.min(edgeDistU, edgeDistV)
-
-        // Smooth falloff near edges
-        const edgeFadeFactor =
-          edgeDist < edgeFade ? Math.pow(edgeDist / edgeFade, 2) : 1
-
-        // Multi-scale noise for organic look
-        const scale1 = 0.01
-        const scale2 = 0.03
-        const scale3 = 0.005
-
-        const noise1 = Math.sin(x * scale1) * Math.cos(y * scale1) * 40
-        const noise2 = Math.sin(x * scale2 + y * scale2) * 30
-        const noise3 = Math.cos(x * scale3 - y * scale3 * 0.5) * 50
-        const random = (Math.random() - 0.5) * 20
-
-        // Apply edge fade to noise
-        const totalNoise = (noise1 + noise2 + noise3 + random) * edgeFadeFactor
-
-        data[i] = 128 + totalNoise
-        data[i + 1] = 128 + totalNoise
-        data[i + 2] = 128 + totalNoise
-      }
-    }
-    ctx.putImageData(imageData, 0, 0)
-
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.RepeatWrapping
-    tex.repeat.set(1, 1)
-    return tex
-  }, [])
-
-  // Create fine detail noise for secondary bumps
-  const fineNoise = useMemo(() => {
-    const canvas = document.createElement("canvas")
-    canvas.width = 256
-    canvas.height = 256
-    const ctx = canvas.getContext("2d")!
-
-    ctx.fillStyle = "#808080"
-    ctx.fillRect(0, 0, 256, 256)
-
-    const imageData = ctx.getImageData(0, 0, 256, 256)
-    const data = imageData.data
-    for (let i = 0; i < data.length; i += 4) {
-      // Multi-octave noise for more detail
-      const noise1 = (Math.random() - 0.5) * 60
-      const noise2 = (Math.random() - 0.5) * 30
-      data[i] += noise1 + noise2
-      data[i + 1] += noise1 + noise2
-      data[i + 2] += noise1 + noise2
-    }
-    ctx.putImageData(imageData, 0, 0)
-
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.RepeatWrapping
-    tex.repeat.set(4, 4) // Higher frequency detail
-    return tex
-  }, [])
-
-  // Configure texture wrapping - PBR correct setup
-  useMemo(() => {
-    // Random UV offset to avoid centered repetition
-    const offsetX = Math.random() * 0.5
-    const offsetY = Math.random() * 0.5
-
-    // Diffuse/albedo uses sRGB color space
-    diffuseMap.colorSpace = THREE.SRGBColorSpace
-    diffuseMap.wrapS = THREE.RepeatWrapping
-    diffuseMap.wrapT = THREE.RepeatWrapping
-    diffuseMap.repeat.set(0.19, 0.19) // Much larger texture scale
-    diffuseMap.offset.set(offsetX, offsetY)
-
-    // Normal map - linear, no color space conversion
-    normalMap.colorSpace = THREE.NoColorSpace
-    normalMap.wrapS = THREE.RepeatWrapping
-    normalMap.wrapT = THREE.RepeatWrapping
-    normalMap.repeat.set(0.19, 0.19)
-    normalMap.offset.set(offsetX, offsetY)
-
-    // AO/Rough/Metal - linear, no color space conversion
-    aoRoughMetalMap.colorSpace = THREE.NoColorSpace
-    aoRoughMetalMap.wrapS = THREE.RepeatWrapping
-    aoRoughMetalMap.wrapT = THREE.RepeatWrapping
-    aoRoughMetalMap.repeat.set(0.19, 0.19)
-    aoRoughMetalMap.offset.set(offsetX, offsetY)
-  }, [diffuseMap, normalMap, aoRoughMetalMap])
-
-  // Create box geometry with subdivisions for displacement and UV2 for AO
-  const geometry = useMemo(() => {
-    const geo = new THREE.BoxGeometry(2, 0.9, 2, 80, 30, 80) // Taller pedestal
-    geo.setAttribute(
-      "uv2",
-      new THREE.BufferAttribute(geo.attributes.uv.array, 2)
-    )
-    geo.computeTangents()
-    return geo
-  }, [])
-
-  return (
-    <group position={[0, -0.4, 0]}>
-      {/* Main concrete pedestal */}
-      <mesh geometry={geometry} castShadow receiveShadow>
-        <meshStandardMaterial
-          map={diffuseMap}
-          normalMap={normalMap}
-          bumpMap={macroBump}
-          bumpScale={0.15}
-          aoMap={aoRoughMetalMap}
-          roughnessMap={aoRoughMetalMap}
-          metalness={0}
-          aoMapIntensity={3}
-          normalScale={new THREE.Vector2(4, 4)}
-          roughness={1}
-        />
-      </mesh>
-
-      {/* Gradient overlay at bottom - cylinder with side gradient transparency */}
-      <mesh position={[0, 1, 0]}>
-        <cylinderGeometry args={[2.25, 2.25, 3, 64, 1, true]} />
-        <shaderMaterial
-          transparent
-          vertexShader={`
-            varying vec2 vUv;
-            varying vec3 vPosition;
-            void main() {
-              vUv = uv;
-              vPosition = position;
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-          `}
-          fragmentShader={`
-            varying vec2 vUv;
-            varying vec3 vPosition;
-            void main() {
-              // Use local position Y for gradient (normalized to cylinder height)
-              float height = 1.5;
-              float normalizedY = (vPosition.y + height * 0.5) / height;
-              float gradient = smoothstep(0.0, 1.0, normalizedY);
-              vec3 bgColor = vec3(0.937, 0.937, 0.937); // #EFEFEF
-              gl_FragColor = vec4(bgColor, 1.0 - gradient);
-            }
-          `}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-    </group>
-  )
-}
-
-// Display pedestal wrapper with fallback
 const DisplayPedestal = () => {
+  return null
+}
+
+const SunLight = () => {
+  const lightRef = useRef<THREE.DirectionalLight>(null)
+  const targetRef = useRef<THREE.Object3D>(null)
+
+  useEffect(() => {
+    if (!lightRef.current || !targetRef.current) return
+    lightRef.current.target = targetRef.current
+  }, [])
+
   return (
-    <Suspense
-      fallback={
-        <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
-          <boxGeometry args={[3, 0.5, 3]} />
-          <meshStandardMaterial color="#808080" roughness={0.9} />
-        </mesh>
-      }
-    >
-      <DisplayPedestalWithTexture />
-    </Suspense>
+    <>
+      <object3D ref={targetRef} position={CAMERA_TARGET} />
+      <directionalLight
+        ref={lightRef}
+        position={[12, 15, 8]} // Changed position
+        intensity={6.0} // Increased intensity
+        color="#F3FBFA" // Changed color
+        castShadow={false}
+      />
+    </>
   )
 }
 
-// SpotLight Helper component - attaches helper to existing spotlight
-const SpotLightHelperComponent = ({
-  light,
-  color = "#ff0000",
-}: {
-  light: THREE.SpotLight
-  color?: string
-}) => {
-  const helperRef = useRef<THREE.SpotLightHelper | undefined>(undefined)
-  const scene = useThree((state) => state.scene)
+interface DeskSceneProps {
+  frontCover?: string
+  backCover?: string
+}
 
+// Camera controller for subtle random rotation
+const CameraController = () => {
+  const { camera } = useThree()
+  const time = useRef(0)
+  const initialized = useRef(false)
+
+  // Initialize camera position
   useEffect(() => {
-    if (!helperRef.current) {
-      helperRef.current = new THREE.SpotLightHelper(light, color)
-      scene.add(helperRef.current)
-    }
-    return () => {
-      if (helperRef.current) {
-        scene.remove(helperRef.current)
-        helperRef.current.dispose()
-        helperRef.current = undefined
-      }
-    }
-  }, [light, color, scene])
+    camera.position.set(...CAMERA_POSITION)
+    camera.lookAt(...CAMERA_TARGET)
+    initialized.current = true
+  }, [camera])
 
-  useFrame(() => {
-    if (helperRef.current) {
-      helperRef.current.update()
-    }
+  useFrame((state, delta) => {
+    if (!initialized.current) return
+
+    time.current += delta
+
+    // Calculate camera distance from target
+    const originalCameraPos = new THREE.Vector3(...CAMERA_POSITION)
+    const targetPos = new THREE.Vector3(...CAMERA_TARGET)
+    const originalDistance = originalCameraPos.distanceTo(targetPos)
+
+    // Motion parameters - reduced for less intensity
+    const radius = 0.4 // Reduced from 0.8
+    const speed = 0.8 // Reduced from 1.2
+
+    // Calculate circular motion around target
+    const angle = time.current * speed
+    const offsetX = Math.sin(angle) * radius
+    const offsetZ = Math.cos(angle) * radius
+
+    // Add vertical motion too - reduced
+    const offsetY = Math.sin(time.current * speed * 0.7) * 0.15 // Reduced from 0.3
+
+    // Create new position
+    const newPosition = new THREE.Vector3(
+      CAMERA_POSITION[0] + offsetX,
+      CAMERA_POSITION[1] + offsetY,
+      CAMERA_POSITION[2] + offsetZ
+    )
+
+    // Maintain consistent distance from target
+    const direction = newPosition.clone().sub(targetPos).normalize()
+    const finalPosition = targetPos
+      .clone()
+      .add(direction.multiplyScalar(originalDistance))
+
+    // Apply final position
+    camera.position.copy(finalPosition)
+
+    // Always look at the target
+    camera.lookAt(targetPos)
   })
 
   return null
 }
 
-// Volumetric Light using custom shader for realistic light shafts
-const VolumetricLight = () => {
-  const meshRef = useRef<THREE.Mesh>(null)
-  const materialRef = useRef<THREE.ShaderMaterial>(null)
-
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uLightPosition: { value: new THREE.Vector3(3, 8, 2) },
-      uLightColor: { value: new THREE.Color("#fff8dc") },
-      uIntensity: { value: 0.8 },
-      uDensity: { value: 0.5 },
-      uDecay: { value: 0.95 },
-    }),
-    []
-  )
-
-  const vertexShader = `
-    varying vec3 vWorldPosition;
-    varying vec3 vViewPosition;
-    
-    void main() {
-      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPosition.xyz;
-      vViewPosition = (viewMatrix * worldPosition).xyz;
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
-    }
-  `
-
-  const fragmentShader = `
-    uniform vec3 uLightPosition;
-    uniform vec3 uLightColor;
-    uniform float uIntensity;
-    uniform float uDensity;
-    uniform float uDecay;
-    
-    varying vec3 vWorldPosition;
-    varying vec3 vViewPosition;
-    
-    // Simplex noise function for dust particles
-    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-    vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-    
-    float snoise(vec3 v) {
-      const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-      const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-      
-      vec3 i = floor(v + dot(v, C.yyy));
-      vec3 x0 = v - i + dot(i, C.xxx);
-      
-      vec3 g = step(x0.yzx, x0.xyz);
-      vec3 l = 1.0 - g;
-      vec3 i1 = min(g.xyz, l.zxy);
-      vec3 i2 = max(g.xyz, l.zxy);
-      
-      vec3 x1 = x0 - i1 + C.xxx;
-      vec3 x2 = x0 - i2 + C.yyy;
-      vec3 x3 = x0 - D.yyy;
-      
-      i = mod289(i);
-      vec4 p = permute(permute(permute(
-        i.z + vec4(0.0, i1.z, i2.z, 1.0))
-        + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-        + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-      
-      float n_ = 0.142857142857;
-      vec3 ns = n_ * D.wyz - D.xzx;
-      
-      vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-      
-      vec4 x_ = floor(j * ns.z);
-      vec4 y_ = floor(j - 7.0 * x_);
-      
-      vec4 x = x_ *ns.x + ns.yyyy;
-      vec4 y = y_ *ns.x + ns.yyyy;
-      vec4 h = 1.0 - abs(x) - abs(y);
-      
-      vec4 b0 = vec4(x.xy, y.xy);
-      vec4 b1 = vec4(x.zw, y.zw);
-      
-      vec4 s0 = floor(b0)*2.0 + 1.0;
-      vec4 s1 = floor(b1)*2.0 + 1.0;
-      vec4 sh = -step(h, vec4(0.0));
-      
-      vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-      vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-      
-      vec3 p0 = vec3(a0.xy, h.x);
-      vec3 p1 = vec3(a0.zw, h.y);
-      vec3 p2 = vec3(a1.xy, h.z);
-      vec3 p3 = vec3(a1.zw, h.w);
-      
-      vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-      p0 *= norm.x;
-      p1 *= norm.y;
-      p2 *= norm.z;
-      p3 *= norm.w;
-      
-      vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-      m = m * m;
-      return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-    }
-    
-    void main() {
-      vec3 rayOrigin = vWorldPosition;
-      vec3 rayDir = normalize(uLightPosition - rayOrigin);
-      
-      // Distance to light
-      float distToLight = length(uLightPosition - rayOrigin);
-      
-      // Create volumetric light cone
-      vec3 toLight = normalize(uLightPosition - rayOrigin);
-      float spotAngle = dot(toLight, vec3(0.0, -1.0, 0.0));
-      
-      // Cone attenuation
-      float coneAngle = 0.3; // ~17 degrees
-      float coneAttenuation = smoothstep(coneAngle, coneAngle * 0.5, acos(spotAngle));
-      
-      // Distance attenuation
-      float distAttenuation = 1.0 / (1.0 + distToLight * 0.1 + distToLight * distToLight * 0.01);
-      
-      // Add dust/noise for realistic volumetric effect
-      float noise = snoise(rayOrigin * 0.5) * 0.5 + 0.5;
-      noise += snoise(rayOrigin * 1.0) * 0.25;
-      noise += snoise(rayOrigin * 2.0) * 0.125;
-      
-      // Combine effects
-      float volumetricIntensity = coneAttenuation * distAttenuation * noise * uIntensity;
-      
-      // Soft edges
-      float fresnel = 1.0 - abs(dot(normalize(vViewPosition), vec3(0.0, 0.0, 1.0)));
-      volumetricIntensity *= fresnel;
-      
-      vec3 color = uLightColor * volumetricIntensity;
-      
-      gl_FragColor = vec4(color, volumetricIntensity * 0.5);
-    }
-  `
-
-  useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime
-    }
-  })
-
-  return (
-    <mesh ref={meshRef} position={[1, 4, 0]}>
-      <coneGeometry args={[2, 8, 32, 1, true]} />
-      <shaderMaterial
-        ref={materialRef}
-        uniforms={uniforms}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        transparent
-        side={THREE.DoubleSide}
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </mesh>
-  )
-}
-
-const DeskScene = () => {
-  const mousePosition = useRef(new THREE.Vector3())
-  const mouseVelocity = useRef(new THREE.Vector3())
-  const spotLightRef = useRef<THREE.SpotLight>(null)
-  const [showHelper, setShowHelper] = useState(false)
-
-  // Camera state for display overlay
-  const [cameraInfo, setCameraInfo] = useState({
-    position: { x: 0, y: 0, z: 0 },
-    rotation: { x: 0, y: 0, z: 0 },
-    rotationDegrees: { x: 0, y: 0, z: 0 },
-    target: { x: 0, y: 0, z: 0 },
-  })
+const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
   const orbitControlsRef = useRef<any>(null)
+  const scrollProgressRef = useRef(0)
+  const sceneWrapRef = useRef<HTMLDivElement>(null)
 
-  // Fixed camera settings - these MUST always be applied
-  const CAMERA_POSITION: [number, number, number] = [-6.5, 1.5, 6.5]
-  const CAMERA_TARGET: [number, number, number] = [-0.484, 1.047, 0.511]
-  const CAMERA_FOV = 30
+  useEffect(() => {
+    let raf = 0
 
-  const CameraSetup = () => {
-    const { camera } = useThree()
+    const update = () => {
+      raf = 0
+      const el = sceneWrapRef.current
+      if (!el) return
 
-    // Force camera position and orientation on mount and every frame
-    useEffect(() => {
-      camera.position.set(...CAMERA_POSITION)
-      camera.lookAt(...CAMERA_TARGET)
-      ;(camera as THREE.PerspectiveCamera).fov = CAMERA_FOV
-      ;(camera as THREE.PerspectiveCamera).updateProjectionMatrix()
-    }, [camera])
+      const scrollY = window.scrollY || 0
+      const rect = el.getBoundingClientRect()
+      const elTop = rect.top + scrollY
+      const elHeight = Math.max(1, rect.height)
 
-    useFrame(() => {
-      // Ensure camera stays fixed (prevents any drift)
-      camera.position.set(...CAMERA_POSITION)
-      camera.lookAt(...CAMERA_TARGET)
-    })
+      const raw = THREE.MathUtils.clamp((scrollY - elTop) / elHeight, 0, 1)
 
-    return null
-  }
+      const threshold = 0.15
+      const t = THREE.MathUtils.clamp((raw - threshold) / (1 - threshold), 0, 1)
+      scrollProgressRef.current = t
+    }
 
-  const CameraTracker = () => {
-    const { camera } = useThree()
+    const onScroll = () => {
+      if (raf) return
+      raf = window.requestAnimationFrame(update)
+    }
 
-    useFrame(() => {
-      const currentPos = camera.position
-      const currentRot = camera.rotation
-      const target =
-        orbitControlsRef.current?.target || new THREE.Vector3(0, 0, 0)
+    window.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("resize", onScroll)
+    update()
 
-      // Update state for display
-      setCameraInfo({
-        position: {
-          x: parseFloat(currentPos.x.toFixed(3)),
-          y: parseFloat(currentPos.y.toFixed(3)),
-          z: parseFloat(currentPos.z.toFixed(3)),
-        },
-        rotation: {
-          x: parseFloat(currentRot.x.toFixed(3)),
-          y: parseFloat(currentRot.y.toFixed(3)),
-          z: parseFloat(currentRot.z.toFixed(3)),
-        },
-        rotationDegrees: {
-          x: parseFloat(((currentRot.x * 180) / Math.PI).toFixed(1)),
-          y: parseFloat(((currentRot.y * 180) / Math.PI).toFixed(1)),
-          z: parseFloat(((currentRot.z * 180) / Math.PI).toFixed(1)),
-        },
-        target: {
-          x: parseFloat(target.x.toFixed(3)),
-          y: parseFloat(target.y.toFixed(3)),
-          z: parseFloat(target.z.toFixed(3)),
-        },
-      })
-    })
-
-    return null
-  }
+    return () => {
+      window.removeEventListener("scroll", onScroll)
+      window.removeEventListener("resize", onScroll)
+      if (raf) window.cancelAnimationFrame(raf)
+    }
+  }, [])
 
   return (
-    <div className="w-full h-full bg-transparent">
+    <div ref={sceneWrapRef} className="w-full h-full bg-transparent">
       <Canvas
         dpr={[1, 2]}
-        shadows={{ type: THREE.PCFSoftShadowMap }}
         gl={{
           antialias: true,
           outputColorSpace: THREE.SRGBColorSpace,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0,
+          toneMappingExposure: 1.15,
           alpha: true,
         }}
         camera={{
-          position: [-6.5, 1.5, 6.5],
-          fov: 30,
+          fov: CAMERA_FOV,
           up: [0, 1, 0],
         }}
-        style={{ width: "100%", height: "100%" }}
+        style={{
+          width: "100%",
+          height: "100%",
+          touchAction: "none",
+          pointerEvents: "none",
+        }}
+        eventSource={undefined}
+        events={undefined}
         onCreated={({ gl }) => {
           gl.setClearColor(new THREE.Color(0x000000), 0)
+
+          gl.domElement.addEventListener("wheel", (e) => e.preventDefault(), {
+            passive: false,
+          })
+          gl.domElement.addEventListener(
+            "touchstart",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "touchmove",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "touchend",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "mousedown",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "mousemove",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener("mouseup", (e) => e.preventDefault(), {
+            passive: false,
+          })
+          gl.domElement.addEventListener(
+            "contextmenu",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "dblclick",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "gesturestart",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "gesturechange",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+          gl.domElement.addEventListener(
+            "gestureend",
+            (e) => e.preventDefault(),
+            { passive: false }
+          )
+        }}
+        onPointerMissed={() => {}}
+        onPointerDown={() => {}}
+        onPointerUp={() => {}}
+        onPointerMove={() => {}}
+        onPointerOver={() => {}}
+        onPointerOut={() => {}}
+        onClick={() => {}}
+        onDoubleClick={() => {}}
+        onContextMenu={() => {}}
+        onWheel={(e) => {
+          e.stopPropagation()
+          e.preventDefault()
         }}
       >
-        <CameraSetup />
-        <CameraTracker />
-        <OrbitControls
+        <CameraController />
+
+        {/* <OrbitControls
           ref={orbitControlsRef}
           enablePan={false}
           enableZoom={false}
           enableRotate={false}
-          minDistance={1}
+          minDistance={3}
           maxDistance={20}
           minPolarAngle={0}
           maxPolarAngle={Math.PI}
-          target={[-0.484, 1.047, 0.511]}
-        />
+          target={ORBIT_TARGET}
+        /> */}
+
         <Suspense fallback={null}>
-          {/* Studio Lighting - Product Only */}
+          <SkySphere />
+          <AtmosphereSphere />
+          {/* Lighting setup - warm and blueish sides */}
+          <SunLight />
 
-          {/* Key light - main focused light on product only */}
-          <spotLight
-            ref={spotLightRef}
-            position={[-3, 5, 2]}
-            target-position={[0, 1.5, 0]}
-            intensity={100}
-            color="#ffffff"
-            angle={Math.PI / 8}
-            penumbra={0.3}
-            distance={15}
-            decay={1.5}
-            castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
-            shadow-bias={-0.0001}
-            shadow-radius={8}
-            shadow-camera-near={0.1}
-            shadow-camera-far={20}
-          />
-          {showHelper && spotLightRef.current && (
-            <SpotLightHelperComponent
-              light={spotLightRef.current}
-              color="#ff0000"
-            />
-          )}
-
-          {/* Extra wide light - reduced for normal map visibility */}
-          <spotLight
-            position={[0, 12, 8]}
-            target-position={[0, 0.55, 0]}
-            intensity={2}
-            color="#ffffff"
-            angle={Math.PI / 6}
-            penumbra={0.2}
-            distance={30}
-            decay={1}
-          />
-
-          {/* Ambient light - base illumination */}
-          <ambientLight intensity={1.5} color="#EFEFEF" />
-
-          {/* Hemisphere light - overall scene lighting */}
-          <hemisphereLight
-            color="#EFEFEF"
-            groundColor="#EFEFEF"
-            intensity={1.2}
-          />
-
-          {/* Fill light - softens shadows from all angles */}
+          {/* Blueish light on one side */}
           <directionalLight
-            position={[5, 5, -5]}
-            intensity={0.5}
-            color="#EFEFEF"
-          />
-          <directionalLight
-            position={[-5, 5, 5]}
-            intensity={0.5}
-            color="#EFEFEF"
+            position={[-10, 8, -5]}
+            intensity={1.5}
+            color="#EFD69D" // Sky blue
+            castShadow={false}
           />
 
-          {/* Photography Studio Backdrop */}
+          {/* Warm ambient light for all-around illumination */}
+          <ambientLight intensity={2.5} color="#F3FBFA" />
+
           <StudioBackdrop />
-
-          {/* Display pedestal */}
           <DisplayPedestal />
-
-          {/* Magazine on display pedestal */}
-          <DeskMagazine />
+          <CameraLockedMagazine
+            scrollProgressRef={scrollProgressRef}
+            frontCover={frontCover}
+            backCover={backCover}
+          />
+          <MagazineClouds />
         </Suspense>
       </Canvas>
     </div>

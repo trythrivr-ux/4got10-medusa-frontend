@@ -88,10 +88,9 @@ export default function CustomLayoutWrapper({
           : "relative w-full min-h-screen"
       }`}
     >
-      <div className="border-white phone:border-[12px] border-[8px] fixed inset-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
-      <div className="border-white phone:border-[12px] border-[8px] rounded-[22px] fixed inset-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
-      <div className="border-white phone:border-[12px] border-[8px] rounded-[14px] fixed inset-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
-      <div className="bg-gradient-to-t from-[#efefef] to-transparent h-[50px] w-full fixed bottom-0 z-10 pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
+      <div className="border-white phone:border-[12px] border-[8px] fixed inset-0 z-[20] pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
+      <div className="border-white phone:border-[12px] border-[8px] rounded-[22px] fixed inset-0 z-[20] pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
+      <div className="border-white phone:border-[12px] border-[8px] rounded-[14px] fixed inset-0 z-[20] pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
 
       <main
         className={`relative bg-white ${
@@ -103,7 +102,7 @@ export default function CustomLayoutWrapper({
         <div
           className={` ${
             customLayout ? "px-[8px] pt-[8px]" : ""
-          } bg-[#efefef] pb-[12px] rounded-[12px]`}
+          } bg-[#efefef]  rounded-[12px]`}
         >
           {!isHomePage && (
             <FourGotTenMenu
