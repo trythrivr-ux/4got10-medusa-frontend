@@ -829,18 +829,21 @@ const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
 
   useEffect(() => {
     let raf = 0
+    const scrollContainer = document.querySelector("[data-scroll-container]")
+    if (!scrollContainer) return
 
     const update = () => {
       raf = 0
       const el = sceneWrapRef.current
       if (!el) return
 
-      const scrollY = window.scrollY || 0
-      const rect = el.getBoundingClientRect()
-      const elTop = rect.top + scrollY
-      const elHeight = Math.max(1, rect.height)
+      const scrollTop = scrollContainer.scrollTop
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      const elTop = elRect.top - containerRect.top + scrollTop
+      const elHeight = Math.max(1, elRect.height)
 
-      const raw = THREE.MathUtils.clamp((scrollY - elTop) / elHeight, 0, 1)
+      const raw = THREE.MathUtils.clamp((scrollTop - elTop) / elHeight, 0, 1)
 
       const threshold = 0.15
       const t = THREE.MathUtils.clamp((raw - threshold) / (1 - threshold), 0, 1)
@@ -852,12 +855,12 @@ const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
       raf = window.requestAnimationFrame(update)
     }
 
-    window.addEventListener("scroll", onScroll, { passive: true })
+    scrollContainer.addEventListener("scroll", onScroll, { passive: true })
     window.addEventListener("resize", onScroll)
     update()
 
     return () => {
-      window.removeEventListener("scroll", onScroll)
+      scrollContainer.removeEventListener("scroll", onScroll)
       window.removeEventListener("resize", onScroll)
       if (raf) window.cancelAnimationFrame(raf)
     }

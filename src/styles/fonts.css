@@ -1,0 +1,103 @@
+/* Neue Haas Grotesk Display Pro */
+@font-face {
+  font-family: "Neue Haas Grotesk Display Pro";
+  src: url("../fonts/NeueHaasDisplayRoman.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Neue Haas Grotesk Display Pro";
+  src: url("../fonts/NeueHaasDisplayLight.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Neue Haas Grotesk Display Pro";
+  src: url("../fonts/NeueHaasDisplayMediu.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inklination Trail */
+@font-face {
+  font-family: "Inklination Trail";
+  src: url("../fonts/Inklination-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inklination Trail";
+  src: url("../fonts/Inklination-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inklination Trail";
+  src: url("../fonts/Inklination-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Font CSS Variables for easy usage */
+:root {
+  --font-neue-haas-roman: "Neue Haas Grotesk Display Pro", sans-serif;
+  --font-neue-haas-light: "Neue Haas Grotesk Display Pro", sans-serif;
+  --font-neue-haas-medium: "Neue Haas Grotesk Display Pro", sans-serif;
+  --font-ink-regular: "Inklination Trail", sans-serif;
+  --font-ink-medium: "Inklination Trail", sans-serif;
+  --font-ink-light: "Inklination Trail", sans-serif;
+}
+
+/* Font utility classes */
+.font-neue-haas-display {
+  font-family: "Neue Haas Grotesk Display Pro", sans-serif;
+}
+
+.font-plus-jakarta {
+  font-family: var(--font-plus-jakarta-sans), sans-serif;
+}
+
+.font-inklination-regular {
+  font-family: "Inklination Trail", sans-serif;
+  font-weight: 400;
+}
+
+.font-inklination-light {
+  font-family: "Inklination Trail", sans-serif;
+  font-weight: 300;
+}
+
+.font-inklination-medium {
+  font-family: "Inklination Trail", sans-serif;
+  font-weight: 500;
+}
+
+/* Text stroke / weight-boost utilities */
+.strok {
+  --strok: 0.35px;
+  text-shadow: var(--strok) 0 0 currentColor,
+    calc(var(--strok) * -1) 0 0 currentColor, 0 var(--strok) 0 currentColor,
+    0 calc(var(--strok) * -1) 0 currentColor;
+}
+
+@supports (-webkit-text-stroke: 1px currentColor) {
+  .strok {
+    text-shadow: none;
+    -webkit-text-stroke: var(--strok) currentColor;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+.strok-md {
+  --strok: 0.75px;
+}

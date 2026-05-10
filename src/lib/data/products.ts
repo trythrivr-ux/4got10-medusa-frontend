@@ -53,36 +53,34 @@ export const listProducts = async ({
     ...(await getCacheOptions("products")),
   }
 
-  return sdk.client
-    .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
-      `/store/products`,
-      {
-        method: "GET",
-        query: {
-          limit,
-          offset,
-          region_id: region?.id,
-          fields:
-            "id,title,handle,subtitle,description,thumbnail,*images,*images.url,*options,*options.values,*variants.calculated_price,*variants.images,*variants.images.url,*variants.options,*variants.options.option,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+metadata,+tags",
-          ...queryParams,
-        },
-        headers,
-        next,
-        cache: "no-store",
-      }
-    )
-    .then(({ products, count }) => {
-      const nextPage = count > offset + limit ? pageParam + 1 : null
+  const { products, count } = await sdk.client.fetch<{
+    products: HttpTypes.StoreProduct[]
+    count: number
+  }>(`/store/products`, {
+    method: "GET",
+    query: {
+      limit,
+      offset,
+      region_id: region?.id,
+      fields:
+        "id,title,handle,subtitle,description,thumbnail,*images,*images.url,*options,*options.values,*variants.calculated_price,*variants.images,*variants.images.url,*variants.options,*variants.options.option,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+metadata,+tags",
+      ...queryParams,
+    },
+    headers,
+    next,
+    cache: "no-store",
+  })
 
-      return {
-        response: {
-          products,
-          count,
-        },
-        nextPage: nextPage,
-        queryParams,
-      }
-    })
+  const nextPage = count > offset + limit ? pageParam + 1 : null
+
+  return {
+    response: {
+      products,
+      count,
+    },
+    nextPage: nextPage,
+    queryParams,
+  }
 }
 
 /**
@@ -212,4 +210,21 @@ export const listProductsWithSort = async ({
     nextPage,
     queryParams,
   }
+}
+
+export const getLatestMagazineProduct = async ({
+  countryCode,
+}: {
+  countryCode: string
+}) => {
+  const { response } = await listProducts({
+    countryCode,
+    queryParams: {
+      limit: 1,
+      category_handle: ["magazines"],
+      sort: "created_at",
+    },
+  })
+
+  return response.products[0] || null
 }

@@ -50,7 +50,7 @@ export function CountdownTimer({
 
   return (
     <div
-      className={`fourgot10-pill w-fit flex-row flex justify-center rounded-full bg-[#f3f3f3] px-[12px] h-[25px] text-[11px] tracking-[0.01em] text-black items-center gap-[6px] ${className}`}
+      className={`fourgot10-pill w-fit flex-row flex justify-center rounded-full h-[25px] text-[11px] tracking-[0.01em] text-black items-center gap-[6px] ${className}`}
     >
       {timeLeft.days > 0 && (
         <>

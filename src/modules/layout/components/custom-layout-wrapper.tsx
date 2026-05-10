@@ -1,9 +1,12 @@
 "use client"
 
 import { useCustomLayout } from "@/context/custom-layout-context"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { usePathname } from "next/navigation"
+import gsap from "gsap"
+import { TransitionProvider } from "@/context/transition-context"
+import FourGotTenMenu from "@modules/layout/components/4got10-menu"
 
 export default function CustomLayoutWrapper({
   children,
@@ -17,6 +20,8 @@ export default function CustomLayoutWrapper({
   const { customLayout } = useCustomLayout()
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const pathname = usePathname()
+  const curtainRef = useRef<HTMLDivElement>(null)
+  const prevPathname = useRef(pathname)
 
   // Check if we're on the home page (e.g., "/us" or "/dk")
   const isHomePage = pathname?.match(/^\/[a-z]{2}$/) !== null
@@ -78,49 +83,81 @@ export default function CustomLayoutWrapper({
     }
   }, [customLayout, isHomePage])
 
-  return (
-    <div
-      className={` flex flex-col ${
-        customLayout
-          ? "h-screen w-screen fixed top-0 left-0 overflow-hidden touch-action-none overscroll-behavior-none"
-          : isHomePage
-          ? "h-screen w-full overflow-hidden"
-          : "relative w-full min-h-screen"
-      }`}
-    >
-      <div className="border-white phone:border-[12px] border-[8px] fixed inset-0 z-[20] pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
-      <div className="border-white phone:border-[12px] border-[8px] rounded-[22px] fixed inset-0 z-[20] pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
-      <div className="border-white phone:border-[12px] border-[8px] rounded-[14px] fixed inset-0 z-[20] pointer-events-none pb-[env(safe-area-inset-bottom)]"></div>
+  useEffect(() => {
+    const curtain = curtainRef.current
+    if (!curtain) return
 
-      <main
-        className={`relative bg-white ${
-          customLayout ? "pt-[env(safe-area-inset-top)]" : ""
+    const tl = gsap.timeline()
+
+    tl.to(curtain, {
+      y: "100%",
+      duration: 0.4,
+      ease: "power3.out",
+      delay: 1.5,
+    })
+
+    return () => {
+      tl.kill()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (prevPathname.current === pathname) return
+    prevPathname.current = pathname
+
+    const curtain = curtainRef.current
+    if (!curtain) return
+
+    const tl = gsap.timeline()
+
+    tl.set(curtain, { y: "0%" }).to(curtain, {
+      y: "100%",
+      duration: 0.4,
+      ease: "power3.out",
+      delay: 1.5,
+    })
+
+    return () => {
+      tl.kill()
+    }
+  }, [pathname])
+
+  return (
+    <TransitionProvider curtainRef={curtainRef}>
+      <div
+        className={` flex flex-col ${
+          customLayout
+            ? "fixed inset-0 w-full h-full p-[12px] overflow-hidden touch-action-none overscroll-behavior-none"
+            : isHomePage
+            ? "fixed inset-0 w-full h-full rounded-[12px] overflow-hidden p-[12px]"
+            : "fixed inset-0 w-full h-full rounded-[12px] overflow-hidden p-[12px]"
         }`}
       >
-        {!customLayout && !isHomePage && <FourGotTenMenu1 regions={regions} />}
-
         <div
-          className={` ${
-            customLayout ? "px-[8px] pt-[8px]" : ""
-          } bg-[#efefef]  rounded-[12px]`}
+          ref={curtainRef}
+          className="fixed inset-0 z-[999] bg-[#ffffff] pointer-events-none"
+          style={{ transform: "translateY(0%)" }}
+        />
+        <main
+          className={`relative w-full bg-[#efefef] h-full rounded-[12px] overflow-hidden ${
+            customLayout ? "pt-[env(safe-area-inset-top)]" : ""
+          }`}
         >
-          {!isHomePage && (
-            <FourGotTenMenu
-              regions={regions}
-              cart={cart}
-              showBackButton={showBackButton || isProductPage}
-            />
-          )}
-          {children}
-          <div className="px-[12px] hidden pt-[12px]">
-            <div className="flex rounded-[12px] bg-white h-[150px]"></div>
+          <div
+            className="h-full rounded-[12px] overflow-y-auto no-scrollbar"
+            data-scroll-container
+          >
+            {!isHomePage && (
+              <FourGotTenMenu
+                regions={regions}
+                cart={cart}
+                showBackButton={showBackButton || isProductPage}
+              />
+            )}
+            {children}
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </TransitionProvider>
   )
 }
-
-import FourGotTenMenu1 from "@/modules/layout/components/top-menu"
-import FourGotTenMenu from "@modules/layout/components/4got10-menu"
-import { retrieveCart } from "@lib/data/cart"

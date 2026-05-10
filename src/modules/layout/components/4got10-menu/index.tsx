@@ -5,13 +5,14 @@ import type { ReactNode } from "react"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import gsap from "gsap"
 import { HttpTypes } from "@medusajs/types"
-import { useParams, usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { updateRegion, updateLineItem, deleteLineItem } from "@lib/data/cart"
 import { retrieveCustomer } from "@lib/data/customer"
 import { getActiveRollouts } from "@lib/data/rollouts"
+import { getLatestMagazineProduct } from "@lib/data/products"
 import HoverModal, { ModalB } from "@modules/common/components/hover-modal"
 import { MOBILE_MAX_WIDTH } from "@lib/breakpoints"
-import Link from "next/link"
+import { TransitionLink } from "@/components/transition-link"
 import { CountdownTimer } from "@/components/countdown-timer"
 
 const Pill = ({
@@ -34,35 +35,34 @@ export default function FourGotTenMenu({
   regions,
   cart,
   scrollContainerRef,
-  isStuck: externalIsStuck,
   isHomePage,
   showBackButton,
 }: {
   regions: HttpTypes.StoreRegion[]
   cart: HttpTypes.StoreCart | null
   scrollContainerRef?: React.RefObject<HTMLElement>
-  isStuck?: boolean
   isHomePage?: boolean
   showBackButton?: boolean
 }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const countryCode = pathname.split("/")[1]
 
   const toMenuHref = (label: string) =>
-    `/${label
+    `/${countryCode}/${label
       .toLowerCase()
       .trim()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9\-]/g, "")}`
 
   const toStoreCategoryHref = (label: string) =>
-    `/store?category=${encodeURIComponent(
+    `/${countryCode}/store?category=${encodeURIComponent(
       label
         .toLowerCase()
         .trim()
         .replace(/\s+/g, "-")
         .replace(/[^a-z0-9\-]/g, "")
     )}`
-  const triggerRef = useRef<HTMLDivElement | null>(null)
   const stickyOuterRef = useRef<HTMLDivElement | null>(null)
   const stickyInnerRef = useRef<HTMLDivElement | null>(null)
   const accountNewsRef = useRef<HTMLDivElement | null>(null)
@@ -81,6 +81,7 @@ export default function FourGotTenMenu({
   const hasAnimatedInRef = useRef(false)
   const logoLeftRef = useRef<HTMLDivElement>(null)
   const logoRightRef = useRef<HTMLDivElement>(null)
+  const gradientBgRef = useRef<HTMLDivElement>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
 
   const [isSmallScreen, setIsSmallScreen] = useState(
@@ -89,20 +90,21 @@ export default function FourGotTenMenu({
       : false
   )
 
-  const [isStuckState, setIsStuckState] = useState(externalIsStuck ?? false)
-
   const [isMenuExpanded, setIsMenuExpanded] = useState(false)
   const [isCartScrolling, setIsCartScrolling] = useState(false)
   const cartScrollRef = useRef<HTMLDivElement | null>(null)
   const [customer, setCustomer] = useState<HttpTypes.StoreCustomer | null>(null)
+  const [latestMagazine, setLatestMagazine] =
+    useState<HttpTypes.StoreProduct | null>(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
-  const pathname = usePathname()
   const [rolloutDropDate, setRolloutDropDate] = useState<Date | null>(null)
   const [showCountdown, setShowCountdown] = useState(false)
 
-  const forcedHomeState2 = isHomePage === true && !isSmallScreen
-  const isStuck = forcedHomeState2 ? true : externalIsStuck ?? isStuckState
+  // Check if we're on products page
+  const isProductsPage = pathname.includes("/products/")
+
+  const isStuck = true
 
   useLayoutEffect(() => {
     if (!isMenuExpanded || !expandedMenuContentRef.current) {
@@ -195,9 +197,17 @@ export default function FourGotTenMenu({
 
   useEffect(() => {
     retrieveCustomer()
-      .then(setCustomer)
+      .then((res) => setCustomer(res))
       .catch(() => setCustomer(null))
   }, [])
+
+  useEffect(() => {
+    if (!countryCode) return
+
+    getLatestMagazineProduct({ countryCode })
+      .then((product) => setLatestMagazine(product))
+      .catch(() => setLatestMagazine(null))
+  }, [countryCode])
 
   // Check for Magazine product page with rollout and future drop date
   useEffect(() => {
@@ -255,31 +265,6 @@ export default function FourGotTenMenu({
   }, [pathname])
 
   useEffect(() => {
-    if (forcedHomeState2) {
-      setIsStuckState(true)
-      return
-    }
-
-    const handleScroll = () => {
-      if (!triggerRef.current) return
-
-      const threshold = 0
-      const stuckNow =
-        triggerRef.current.getBoundingClientRect().top <= threshold
-      setIsStuckState((prev) => (prev !== stuckNow ? stuckNow : prev))
-    }
-
-    handleScroll()
-
-    const scrollContainer = scrollContainerRef?.current || window
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true })
-
-    return () => {
-      scrollContainer.removeEventListener("scroll", handleScroll)
-    }
-  }, [scrollContainerRef, forcedHomeState2])
-
-  useEffect(() => {
     if (isHomePage && stickyOuterRef.current) {
       // Initially hide the menu on home page (both desktop and mobile)
       gsap.set(stickyOuterRef.current, {
@@ -295,7 +280,9 @@ export default function FourGotTenMenu({
       // Only on desktop, not mobile
       if (!isSmallScreen) {
         gsap.set(stickyInnerRef.current, {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "rgba(248, 248, 248, 0.55)",
+          backdropFilter: "blur(12px)",
+          webkitBackdropFilter: "blur(12px)",
           paddingTop: 15,
           paddingBottom: 8,
           paddingLeft: 8,
@@ -304,7 +291,7 @@ export default function FourGotTenMenu({
         })
 
         gsap.set(stickyOuterRef.current, {
-          paddingTop: 22,
+          paddingTop: 12,
           paddingLeft: 22,
           paddingRight: 22,
         })
@@ -483,6 +470,9 @@ export default function FourGotTenMenu({
 
     const stuckWidth =
       showCountdown && rolloutDropDate && !isMenuExpanded ? 475 : 675
+
+    // Use (full width / 3) - 40px on products page
+    const productsPageWidth = "calc(33.333% + 22px)"
     const stuckButtonWidth = 110
 
     if (expandedMenuWidthRef.current === null && menuBoxRef.current) {
@@ -528,9 +518,20 @@ export default function FourGotTenMenu({
       }
 
       tl.to(
+        gradientBgRef.current,
+        {
+          backgroundColor: "#efefef",
+          duration: 0.2,
+        },
+        0
+      )
+
+      tl.to(
         inner,
         {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "#ffffff",
+          backdropFilter: "blur(12px)",
+          webkitBackdropFilter: "blur(12px)",
           height: "auto",
           paddingTop: isHomePage ? 12 : 12,
           paddingBottom: 12,
@@ -545,7 +546,9 @@ export default function FourGotTenMenu({
       tl.to(
         outer,
         {
-          paddingTop: isHomePage ? 12 : 12,
+          paddingTop: 0,
+          paddingLeft: 12,
+          paddingRight: 12,
           duration: 0.2,
         },
         0
@@ -585,14 +588,6 @@ export default function FourGotTenMenu({
       // Simplified calculation - only subtract cart width and padding, let flex handle the rest
       const availableWidth = innerWidth - cartWidth - 24
       const scaleX = availableWidth / currentMenuWidth
-
-      tl.set(
-        inner,
-        {
-          overflow: "hidden",
-        },
-        0
-      )
 
       tl.set(
         menuBoxRef.current,
@@ -709,16 +704,26 @@ export default function FourGotTenMenu({
         0.4
       )
     } else if (isStuck && !isMenuExpanded) {
+      tl.to(
+        gradientBgRef.current,
+        {
+          backgroundColor: "#ffffff",
+          duration: 0.2,
+        },
+        0
+      )
+
       if (isSmallScreen) {
         if (logoEls.length) tl.set(logoEls, { opacity: 0 }, 0)
       }
 
-      if (forcedHomeState2 && !isSmallScreen) {
-        // Only force state 2 on desktop, not mobile
+      if (!isSmallScreen) {
         tl.set(
           inner,
           {
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "rgba(248, 248, 248, 0.55)",
+            backdropFilter: "blur(12px)",
+            webkitBackdropFilter: "blur(12px)",
             paddingTop: 8,
             paddingBottom: 8,
             paddingLeft: 8,
@@ -731,7 +736,7 @@ export default function FourGotTenMenu({
         tl.set(
           outer,
           {
-            paddingTop: 22,
+            paddingTop: 12,
             paddingLeft: 22,
             paddingRight: 22,
           },
@@ -882,7 +887,11 @@ export default function FourGotTenMenu({
       tl.to(
         inner,
         {
-          width: isSmallScreen ? "100%" : stuckWidth,
+          width: isSmallScreen
+            ? "100%"
+            : isProductsPage
+            ? productsPageWidth
+            : stuckWidth,
           duration: 0.42,
         },
         0
@@ -900,7 +909,7 @@ export default function FourGotTenMenu({
       tl.to(
         nonPillButtons,
         {
-          backgroundColor: isSmallScreen ? "#FFFFFF" : "#EFEFEF",
+          backgroundColor: "#FFFFFF",
           duration: 0.35,
         },
         0
@@ -1106,62 +1115,50 @@ export default function FourGotTenMenu({
 
   return (
     <>
-      <div ref={triggerRef} className="h-[1px] overflow-hidden  w-full" />
-
       <div
         ref={stickyOuterRef}
-        className={`${
-          isHomePage ? "fixed" : "sticky"
-        } rounded-[12px] items-center ${isHomePage ? "z-[9]" : "z-[19]"} ${
+        className={`fixed rounded-[12px] items-center z-[99] ${
           isMenuExpanded
-            ? `${
-                isHomePage
-                  ? "top-[6px] phone:top-[12px]"
-                  : "top-[6px] phone:top-[12px]"
-              } ${
-                isHomePage
-                  ? "phone:px-[22px] px-[17px]"
-                  : "px-[8px] phone:px-[12px]"
-              } w-full`
-            : `top-[0px] ${
+            ? `top-[16px] phone:top-[22px] left-[12px] right-[12px] pr-[12px] pl-[12px] pt-[0px]`
+            : `top-[10px] left-[12px] right-[12px] ${
                 isHomePage
                   ? "phone:px-[22px] px-[15px]"
                   : "px-[9.5px] phone:px-[12px]"
-              } w-full`
+              }`
         }`}
+        onWheel={(e) => {
+          const scrollContainer = document.querySelector(
+            "[data-scroll-container]"
+          )
+          if (scrollContainer) {
+            scrollContainer.scrollTop += e.deltaY
+          }
+        }}
       >
         <div
-          className={`bg-gradient-to-b from-[#efefef] to-transaprent rounded-[10px] z-0 absolute left-0 right-0 h-[100px] transition-all duration-400 ease-out ${
-            forcedHomeState2 ? "top-[12px]" : "top-[0px]"
-          } ${isMenuExpanded ? "" : ""}`}
+          ref={gradientBgRef}
+          className="rounded-[10px] z-0 absolute left-0 right-0 h-[100px] pointer-events-none"
+          style={{
+            backgroundColor: "#efefef",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 0%, transparent 100%)",
+            maskImage: "linear-gradient(to bottom, black 0%, transparent 100%)",
+            top: "0px",
+          }}
         ></div>
         {!isSmallScreen && (
           <div
             ref={logoLeftRef}
-            className={`pointer-events-none  pt-[10px] select-none absolute ${
+            className={`pointer-events-none select-none absolute ${
               isHomePage ? "left-[22px]" : "left-[12px]"
             } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
           >
             <Image
-              src="/menu-icons/4got10-2/4G.svg"
+              src="/menu-icons/4got10-2/group-1.svg"
               alt=""
               width={100}
               height={100}
-              className="w-fit max-h-[39px] pr-[6px]"
-            />
-            <Image
-              src="/menu-icons/4got10-2/O.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="w-fit max-h-[39px] pr-[6px]"
-            />
-            <Image
-              src="/menu-icons/4got10-2/T10.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="w-fit max-h-[39px] pr-[6px]"
+              className="w-fit max-h-[44px] pr-[6px]"
             />
           </div>
         )}
@@ -1169,23 +1166,16 @@ export default function FourGotTenMenu({
         {!isSmallScreen && (
           <div
             ref={logoRightRef}
-            className={`pointer-events-none pt-[10px] select-none absolute ${
+            className={`pointer-events-none select-none absolute ${
               isHomePage ? "right-[22px]" : "right-[12px]"
             } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
           >
             <Image
-              src="/menu-icons/4got10-2/MA.svg"
+              src="/menu-icons/4got10-2/group-2.svg"
               alt=""
               width={100}
               height={100}
-              className="w-fit max-h-[39px] pr-[4px]"
-            />
-            <Image
-              src="/menu-icons/4got10-2/G.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="w-fit max-h-[39px]"
+              className="w-fit max-h-[44px] pr-[6px]"
             />
           </div>
         )}
@@ -1197,14 +1187,12 @@ export default function FourGotTenMenu({
               ? "phone:py-[8px] phone:px-[8px] py-[0px] px-[0px]"
               : "py-[0px] px-[0px]"
           } flex flex-col ${
-            hasAnimatedInRef.current ? "w-fit" : "mx-auto"
-          } will-change-[width] ${
-            isStuck || isMenuExpanded
-              ? isSmallScreen && isStuck && !isMenuExpanded
-                ? ""
-                : "shadow-[0_0_30px_rgba(239,239,239)]"
-              : ""
-          }`}
+            isProductsPage && !isSmallScreen
+              ? "w-[calc(33.333%+22px)] mx-auto"
+              : hasAnimatedInRef.current
+              ? "w-fit"
+              : "mx-auto"
+          } bg-[#F8F8F8]/55 backdrop-blur-[12px] will-change-[width]`}
         >
           <div
             className={`flex flex-row gap-[8px] items-center ${
@@ -1264,7 +1252,7 @@ export default function FourGotTenMenu({
                 isSmallScreen && isStuck && !isMenuExpanded
                   ? "shadow-[0_0_30px_rgba(239,239,239)]"
                   : ""
-              } ${isStuck && !isMenuExpanded ? "flex-1" : "min-w-[100px]"}`}
+              } flex-1`}
             >
               <div className="text-[12.5px] tracking-[0.01em]">Menu</div>
               <div className="h-[10px] w-[1px] bg-black/15" />
@@ -1272,38 +1260,17 @@ export default function FourGotTenMenu({
             <div
               ref={pillsContainerRef}
               data-fourgot10-nonpill="true"
-              className={`${
-                showCountdown && rolloutDropDate && !isMenuExpanded && isStuck
-                  ? ""
-                  : "flex-[2]"
-              } rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center gap-[6px] fourgot10-hide-on-small`}
+              className={`flex-1 rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center gap-[6px] fourgot10-hide-on-small`}
             >
-              {showCountdown &&
-              rolloutDropDate &&
-              !isMenuExpanded &&
-              isStuck ? (
-                <CountdownTimer
-                  dropDate={rolloutDropDate}
-                  className="w-[145px] justify-between"
-                />
-              ) : (
-                <>
-                  <Pill>Shop</Pill>
-                  <Pill>Magazine</Pill>
-                  <Pill>Categories</Pill>
-                  <Pill>Sale</Pill>
-                  <Pill>Blog</Pill>
-                  <Pill className="gap-[6px]">
-                    <span>Search</span>
-                    <Image
-                      src="/menu-icons/search.png"
-                      alt=""
-                      width={12}
-                      height={12}
-                    />
-                  </Pill>
-                </>
-              )}
+              <input
+                type="text"
+                placeholder="Search products..."
+                className={`h-full rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small w-full text-[12.5px] tracking-[0.01em] outline-none focus:outline-none ${
+                  isSmallScreen && isStuck && !isMenuExpanded
+                    ? "shadow-[0_0_30px_rgba(239,239,239)]"
+                    : ""
+                }`}
+              />
             </div>
             <div
               ref={accountNewsRef}
@@ -1462,17 +1429,17 @@ export default function FourGotTenMenu({
                     <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
                       <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
                         <div className="flex flex-row gap-[10px]">
-                          <Link
-                            href="/account"
+                          <TransitionLink
+                            href={`/${countryCode}/account`}
                             style={{
                               fontFamily: "Plus Jakarta Sans, sans-serif",
                             }}
                             className=" font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
                           >
                             Account
-                          </Link>
-                          <Link
-                            href="/account/#orders"
+                          </TransitionLink>
+                          <TransitionLink
+                            href={`/${countryCode}/account/#orders`}
                             style={{
                               fontFamily: "Plus Jakarta Sans, sans-serif",
                             }}
@@ -1481,7 +1448,7 @@ export default function FourGotTenMenu({
                             }  font-medium  text-[11.5px] flex items-center justify-center tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] w-full`}
                           >
                             All Orders
-                          </Link>
+                          </TransitionLink>
                         </div>
                       </div>
                     </ModalB>
@@ -1490,17 +1457,17 @@ export default function FourGotTenMenu({
                   <ModalB isMenuExpanded={isMenuExpanded} isStuck={isStuck}>
                     <div className="flex gap-[6px] px-[12px] py-[14px] flex-col">
                       <div className="flex flex-row gap-[10px]">
-                        <Link
-                          href="/account"
+                        <TransitionLink
+                          href={`/${countryCode}/account`}
                           style={{
                             fontFamily: "Plus Jakarta Sans, sans-serif",
                           }}
                           className=" font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
                         >
                           Sign in
-                        </Link>
-                        <Link
-                          href="/account"
+                        </TransitionLink>
+                        <TransitionLink
+                          href={`/${countryCode}/account`}
                           style={{
                             fontFamily: "Plus Jakarta Sans, sans-serif",
                           }}
@@ -1509,7 +1476,7 @@ export default function FourGotTenMenu({
                           }  font-medium  text-[11.5px] flex items-center justify-center tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] w-full`}
                         >
                           Sign up
-                        </Link>
+                        </TransitionLink>
                       </div>
                     </div>
                   </ModalB>
@@ -1845,15 +1812,15 @@ export default function FourGotTenMenu({
                         Keep Shopping
                       </button>
                       {(cart?.items?.length ?? 0) > 0 && (
-                        <Link
-                          href={"/cart"}
+                        <TransitionLink
+                          href={`/${countryCode}/cart`}
                           style={{
                             fontFamily: "Plus Jakarta Sans, sans-serif",
                           }}
                           className="mt-[12px] font-medium text-white flex items-center justify-center text-[11.5px] tracking-[0.15px] rounded-[10px] px-[12px] h-[42px] bg-[#484848] w-full"
                         >
                           Go to Cart
-                        </Link>
+                        </TransitionLink>
                       )}
                     </div>
                   </div>
@@ -1892,8 +1859,8 @@ export default function FourGotTenMenu({
                     }
                   `}</style>
                   <div className="flex flex-row gap-[10px]">
-                    <Link
-                      href={toMenuHref("Shop All")}
+                    <TransitionLink
+                      href={toMenuHref("Store")}
                       className="flex flex-row items-center menu-item"
                     >
                       {isMenuExpanded && (
@@ -1905,7 +1872,7 @@ export default function FourGotTenMenu({
                       >
                         Shop All
                       </span>
-                    </Link>
+                    </TransitionLink>
                     <div className="border-[#00000025] tracking-[0px] flex flex-row items-center justify-center border-[1px] rounded-full px-[10px] h-[22.5px]">
                       <p
                         className="text-[9.8px] font-medium"
@@ -1916,8 +1883,12 @@ export default function FourGotTenMenu({
                     </div>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
-                      href={toMenuHref("Latest Magazine")}
+                    <TransitionLink
+                      href={
+                        latestMagazine
+                          ? toMenuHref(`products/${latestMagazine.handle}`)
+                          : toMenuHref("Latest Magazine")
+                      }
                       className="flex flex-row items-center menu-item"
                     >
                       {isMenuExpanded && (
@@ -1929,10 +1900,10 @@ export default function FourGotTenMenu({
                       >
                         Latest Magazine
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toMenuHref("Blog")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -1945,10 +1916,10 @@ export default function FourGotTenMenu({
                       >
                         Blog
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toMenuHref("Features")}
                       className="relative flex flex-row items-center menu-item"
                     >
@@ -1961,7 +1932,7 @@ export default function FourGotTenMenu({
                       >
                         Features
                       </span>
-                    </Link>
+                    </TransitionLink>
                     <div className="border-[#00000025] tracking-[0px] flex flex-row items-center justify-center border-[1px] rounded-full px-[10px] h-[22.5px]">
                       <p
                         className="text-[9.8px] font-medium"
@@ -1982,7 +1953,7 @@ export default function FourGotTenMenu({
                     Categories
                   </span>
                   <div className="flex flex-row gap-[10px]">
-                    <Link
+                    <TransitionLink
                       href={toStoreCategoryHref("Magazines")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -1995,7 +1966,7 @@ export default function FourGotTenMenu({
                       >
                         Magazines
                       </span>
-                    </Link>
+                    </TransitionLink>
                     <div className="border-[#00000025] tracking-[0px] flex flex-row items-center justify-center border-[1px] rounded-full px-[10px] h-[22.5px]">
                       <p
                         className="text-[9.8px] font-medium"
@@ -2006,7 +1977,7 @@ export default function FourGotTenMenu({
                     </div>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toStoreCategoryHref("Clothes")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2019,10 +1990,10 @@ export default function FourGotTenMenu({
                       >
                         Clothes
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toStoreCategoryHref("Posters")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2035,10 +2006,10 @@ export default function FourGotTenMenu({
                       >
                         Posters
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toStoreCategoryHref("Jewelry")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2051,10 +2022,10 @@ export default function FourGotTenMenu({
                       >
                         Jewelry
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toStoreCategoryHref("Bundles")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2067,7 +2038,7 @@ export default function FourGotTenMenu({
                       >
                         Bundles
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                 </div>
                 <div className="flex flex-col w-full gap-[12px] h-fit">
@@ -2080,7 +2051,7 @@ export default function FourGotTenMenu({
                     Others
                   </span>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toMenuHref("Sign Up")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2093,10 +2064,10 @@ export default function FourGotTenMenu({
                       >
                         Sign Up
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toMenuHref("Our Story")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2109,10 +2080,10 @@ export default function FourGotTenMenu({
                       >
                         Our Story
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toMenuHref("Become Affiliate")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2125,10 +2096,10 @@ export default function FourGotTenMenu({
                       >
                         Become Affiliate
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <Link
+                    <TransitionLink
                       href={toMenuHref("Contact")}
                       className="flex flex-row items-center menu-item"
                     >
@@ -2141,7 +2112,7 @@ export default function FourGotTenMenu({
                       >
                         Contact
                       </span>
-                    </Link>
+                    </TransitionLink>
                   </div>
                 </div>
               </div>
@@ -2220,6 +2191,16 @@ export default function FourGotTenMenu({
             </div>
           )}
         </div>
+
+        {/* Floating countdown div below sticky menu */}
+        {isProductsPage && !isSmallScreen && rolloutDropDate && (
+          <div className="mt-[8px] mx-auto w-fit bg-[#F8F8F8]/55 backdrop-blur-[12px] rounded-full h-[27px] px-[19px] flex items-center justify-center">
+            <CountdownTimer
+              dropDate={rolloutDropDate}
+              className="text-[12px] font-medium tracking-[0.01em]"
+            />
+          </div>
+        )}
       </div>
     </>
   )

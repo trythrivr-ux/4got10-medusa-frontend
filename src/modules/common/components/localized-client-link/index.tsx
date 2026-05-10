@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { TransitionLink } from "@/components/transition-link"
 import { useParams } from "next/navigation"
 import React from "react"
 
@@ -23,9 +23,9 @@ const LocalizedClientLink = ({
   const { countryCode } = useParams()
 
   return (
-    <Link href={`/${countryCode}${href}`} {...props}>
+    <TransitionLink href={`/${countryCode}${href}`} {...props}>
       {children}
-    </Link>
+    </TransitionLink>
   )
 }
 
