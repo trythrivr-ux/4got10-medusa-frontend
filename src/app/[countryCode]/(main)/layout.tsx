@@ -6,6 +6,7 @@ import ErrorBoundary from "@modules/common/components/error-boundary"
 import { getBaseURL } from "@lib/util/env"
 import { CustomLayoutProvider } from "@/context/custom-layout-context"
 import { CookieBanner } from "@/components/cookie-banner"
+import WebsiteLockGuard from "@/components/website-lock-guard"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -18,10 +19,12 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   return (
     <>
       <CustomLayoutProvider>
-        <ErrorBoundary>
-          <main className="w-full">{props.children}</main>
-          <CookieBanner />
-        </ErrorBoundary>
+        <WebsiteLockGuard>
+          <ErrorBoundary>
+            <main className="w-full">{props.children}</main>
+            <CookieBanner />
+          </ErrorBoundary>
+        </WebsiteLockGuard>
       </CustomLayoutProvider>
     </>
   )

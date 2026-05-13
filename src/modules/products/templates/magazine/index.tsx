@@ -3,10 +3,13 @@ import React from "react"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 import { getActiveRollouts } from "@lib/data/rollouts"
+import { listCategories } from "@lib/data/categories"
+import { getProductPrice } from "@lib/util/get-product-price"
 import SimpleDeskScene from "@modules/desk/components/simple-desk-scene"
 import MagazineProductActions from "../magazine-product-actions"
 import { Button, Divider, Typography } from "@/components/ui"
 import AnimatedRow from "@modules/products/components/animated-row"
+import PaginatedProducts from "@modules/store/templates/paginated-products"
 
 type MagazineProductTemplateProps = {
   product: HttpTypes.StoreProduct
@@ -23,6 +26,17 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
   if (!product || !product.id) {
     return notFound()
   }
+
+  // Get Magazines category
+  const categories = await listCategories().catch(() => [])
+  const magazinesCategory = categories.find((cat) =>
+    cat.handle?.toLowerCase().includes("magazine")
+  )
+
+  // Get product price
+  const { cheapestPrice } = getProductPrice({
+    product,
+  })
 
   const rolloutsData = await getActiveRollouts()
   const rollouts = (rolloutsData as any)?.rollouts || []
@@ -102,7 +116,13 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
               Overview
             </Typography>
           </Button>
-          <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] min-h-[220px]">
+          <div
+            className={`flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] ${
+              product.variants && product.variants.length > 1
+                ? "min-h-[220px]"
+                : "h-fit"
+            }`}
+          >
             <div className="w-full gap-[17px] flex flex-col h-fit">
               <div className="flex flex-col gap-[7px] w-full h-fit">
                 <div className="w-full h-fit justify-between items-center flex flex-row">
@@ -119,59 +139,61 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
                     style={{ ["--strok" as any]: "0.02px" }}
                     variant="title"
                   >
-                    Vice City
+                    {product.title}
                   </Typography>
                   <div className="flex flex-row gap-[2px]">
-                    <Typography
-                      className="items-start pt-[1px] strok text-[13.5px]"
-                      style={{ ["--strok" as any]: "0.1px" }}
-                      variant="title"
-                    >
-                      $
-                    </Typography>
-                    <Typography
-                      className="strok"
-                      style={{ ["--strok" as any]: "0.02px" }}
-                      variant="title"
-                    >
-                      19.
-                    </Typography>
-                    <Typography
-                      className="items-start pt-[1px] strok text-[13.5px]"
-                      style={{ ["--strok" as any]: "0.1px" }}
-                      variant="title"
-                    >
-                      95
-                    </Typography>
+                    {cheapestPrice && (
+                      <>
+                        <Typography
+                          className="strok"
+                          style={{ ["--strok" as any]: "0.02px" }}
+                          variant="title"
+                        >
+                          {cheapestPrice.calculated_price.split(".")[0]}
+                        </Typography>
+                        <Typography
+                          style={{ ["--strok" as any]: "0.1px" }}
+                          variant="title"
+                        >
+                          .
+                        </Typography>
+                        <Typography
+                          className="items-start pt-[1px] strok text-[13.5px]"
+                          style={{ ["--strok" as any]: "0.1px" }}
+                          variant="title"
+                        >
+                          {cheapestPrice.calculated_price.split(".")[1] || "00"}
+                        </Typography>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
               <Divider orientation="horizontal" />
-              <div className="w-full h-fit justify-start items-start gap-[15px] flex flex-col">
-                <Typography
-                  className="opacity-[55%] py-[1px]"
-                  variant="subtitle1"
-                >
-                  Variatens
-                </Typography>
-                <div className="flex flex-row gap-[8px] w-full h-[150px]">
-                  <div className="flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full">
-                    <div className="flex flex-row w-full h-fit">
-                      <Typography variant="subtitle2">Black</Typography>
-                    </div>
-                  </div>
-                  <div className="flex rounded-[7px] p-[12px] border-[#7B7B7B25] border-[1px] flex-col justify-end w-full">
-                    <div className="flex flex-row w-full h-fit">
-                      <Typography variant="subtitle2">Black</Typography>
-                    </div>
-                  </div>
-                  <div className="flex rounded-[7px] p-[12px] border-[#7B7B7B25] border-[1px] flex-col justify-end w-full">
-                    <div className="flex flex-row w-full h-fit">
-                      <Typography variant="subtitle2">Black</Typography>
-                    </div>
+              {product.variants && product.variants.length > 1 && (
+                <div className="w-full h-fit justify-start items-start gap-[15px] flex flex-col">
+                  <Typography
+                    className="opacity-[55%] py-[1px]"
+                    variant="subtitle1"
+                  >
+                    Variatens
+                  </Typography>
+                  <div className="flex flex-row gap-[8px] w-full h-[150px]">
+                    {product.variants.slice(0, 3).map((variant) => (
+                      <div
+                        key={variant.id}
+                        className="flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full"
+                      >
+                        <div className="flex flex-row w-full h-fit">
+                          <Typography variant="subtitle2">
+                            {variant.title}
+                          </Typography>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -213,15 +235,13 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
           </div>
         </div>
       </div>
-      <div className="flex flex-col w-full h-fit px-[12px] pb-[12px] gap-[12px]">
-        <div className="flex flex-row w-full h-[calc(100vw/6-24px)]">
-          <AnimatedRow itemsPerSide={3} />
-        </div>
-        <div className="h-[500px] flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full">
-          <div className="flex flex-row w-full h-fit">
-            <Typography variant="subtitle2">Black</Typography>
-          </div>
-        </div>
+      <div className="flex flex-col w-full px-[12px] pb-[24px] gap-[12px]">
+        <PaginatedProducts
+          sortBy="created_at"
+          page="1"
+          countryCode={countryCode}
+          categoryId={magazinesCategory?.id}
+        />
       </div>
     </div>
   )

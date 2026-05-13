@@ -221,8 +221,6 @@ export const getLatestMagazineProduct = async ({
     countryCode,
     queryParams: {
       limit: 1,
-      category_handle: ["magazines"],
-      sort: "created_at",
     },
   })
 

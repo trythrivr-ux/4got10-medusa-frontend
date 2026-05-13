@@ -280,7 +280,7 @@ export default function FourGotTenMenu({
       // Only on desktop, not mobile
       if (!isSmallScreen) {
         gsap.set(stickyInnerRef.current, {
-          backgroundColor: "rgba(248, 248, 248, 0.55)",
+          backgroundColor: "#D8D8D8",
           backdropFilter: "blur(12px)",
           webkitBackdropFilter: "blur(12px)",
           paddingTop: 15,
@@ -721,7 +721,7 @@ export default function FourGotTenMenu({
         tl.set(
           inner,
           {
-            backgroundColor: "rgba(248, 248, 248, 0.55)",
+            backgroundColor: "#D8D8D8",
             backdropFilter: "blur(12px)",
             webkitBackdropFilter: "blur(12px)",
             paddingTop: 8,
@@ -1147,37 +1147,41 @@ export default function FourGotTenMenu({
           }}
         ></div>
         {!isSmallScreen && (
-          <div
-            ref={logoLeftRef}
-            className={`pointer-events-none select-none absolute ${
-              isHomePage ? "left-[22px]" : "left-[12px]"
-            } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
-          >
-            <Image
-              src="/menu-icons/4got10-2/group-1.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="w-fit max-h-[44px] pr-[6px]"
-            />
-          </div>
+          <TransitionLink href="/">
+            <div
+              ref={logoLeftRef}
+              className={`select-none absolute ${
+                isHomePage ? "left-[22px]" : "left-[12px]"
+              } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
+            >
+              <Image
+                src="/menu-icons/4got10-2/group-1.svg"
+                alt=""
+                width={100}
+                height={100}
+                className="w-fit max-h-[44px] pr-[6px]"
+              />
+            </div>
+          </TransitionLink>
         )}
 
         {!isSmallScreen && (
-          <div
-            ref={logoRightRef}
-            className={`pointer-events-none select-none absolute ${
-              isHomePage ? "right-[22px]" : "right-[12px]"
-            } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
-          >
-            <Image
-              src="/menu-icons/4got10-2/group-2.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="w-fit max-h-[44px] pr-[6px]"
-            />
-          </div>
+          <TransitionLink href="/">
+            <div
+              ref={logoRightRef}
+              className={`select-none absolute ${
+                isHomePage ? "right-[22px]" : "right-[12px]"
+              } top-[50%] -translate-y-1/2 z-10 flex items-center h-[34px]`}
+            >
+              <Image
+                src="/menu-icons/4got10-2/group-2.svg"
+                alt=""
+                width={100}
+                height={100}
+                className="w-fit max-h-[44px] pr-[6px]"
+              />
+            </div>
+          </TransitionLink>
         )}
 
         <div
@@ -1622,7 +1626,9 @@ export default function FourGotTenMenu({
                                       style: "currency",
                                       currency:
                                         cart?.region?.currency_code || "USD",
-                                    }).format(item.unit_price / 100)}
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    }).format(item.total || 0)}
                                   </span>
                                 </div>
 
@@ -1668,7 +1674,7 @@ export default function FourGotTenMenu({
                                       onClick={() =>
                                         updateLineItem({
                                           lineId: item.id,
-                                          quantity: item.quantity + 1,
+                                          quantity: item.quantity - 1,
                                         }).then(() => {
                                           window.dispatchEvent(
                                             new Event("cart-updated")
@@ -1788,7 +1794,11 @@ export default function FourGotTenMenu({
                               }}
                             >
                               {cart?.subtotal
-                                ? `$${(cart.subtotal / 100).toFixed(2)}`
+                                ? new Intl.NumberFormat("en-US", {
+                                    style: "currency",
+                                    currency:
+                                      cart?.region?.currency_code || "USD",
+                                  }).format(cart.subtotal)
                                 : "$0.00"}
                             </p>
                           </div>
@@ -1841,7 +1851,13 @@ export default function FourGotTenMenu({
                 }
               }}
             >
-              <div className="expanded-menu-top-row flex flex-row gap-[25px] px-[2px] py-[22px] h-fit w-full">
+              <div
+                className={`expanded-menu-top-row ${
+                  isSmallScreen
+                    ? "flex-col gap-[20px]"
+                    : "flex flex-row gap-[25px]"
+                } px-[2px] py-[22px] h-fit w-full`}
+              >
                 <div className="flex flex-col w-full gap-[12px] h-fit">
                   <span
                     className="font-medium pb-[0px] opacity-[50%] text-[12.25px] tracking-[0.25px]"
@@ -1886,7 +1902,7 @@ export default function FourGotTenMenu({
                     <TransitionLink
                       href={
                         latestMagazine
-                          ? toMenuHref(`products/${latestMagazine.handle}`)
+                          ? `/${countryCode}/products/${latestMagazine.handle}`
                           : toMenuHref("Latest Magazine")
                       }
                       className="flex flex-row items-center menu-item"
@@ -2116,8 +2132,18 @@ export default function FourGotTenMenu({
                   </div>
                 </div>
               </div>
-              <div className="expanded-menu-bottom-row flex flex-row gap-[8px] h-[320px]">
-                <div className="expanded-menu-card flex flex-col gap-[6px] px-[12px] py-[15px] bg-[#EFEFEF] items-start justify-end w-full h-full rounded-[10px]">
+              <div
+                className={`expanded-menu-bottom-row ${
+                  isSmallScreen
+                    ? "flex-col gap-[8px] h-auto"
+                    : "flex flex-row gap-[8px] h-[320px]"
+                } `}
+              >
+                <div
+                  className={`expanded-menu-card flex flex-col gap-[6px] px-[12px] py-[15px] bg-[#EFEFEF] items-start justify-end w-full ${
+                    isSmallScreen ? "h-auto" : "h-full"
+                  } rounded-[10px]`}
+                >
                   <span
                     className="font-medium pb-[0px] opacity-[50%] text-[12.25px] tracking-[0.25px]"
                     style={{
@@ -2139,7 +2165,11 @@ export default function FourGotTenMenu({
                     Read More
                   </button>
                 </div>
-                <div className="expanded-menu-card flex flex-col gap-[6px] px-[12px] py-[15px] bg-[#EFEFEF] items-start justify-end w-full h-full rounded-[10px]">
+                <div
+                  className={`expanded-menu-card flex flex-col gap-[6px] px-[12px] py-[15px] bg-[#EFEFEF] items-start justify-end w-full ${
+                    isSmallScreen ? "h-auto" : "h-full"
+                  } rounded-[10px]`}
+                >
                   <span
                     className="font-medium pb-[0px] opacity-[50%] text-[12.25px] tracking-[0.25px]"
                     style={{
@@ -2165,7 +2195,11 @@ export default function FourGotTenMenu({
                     </div>
                   </div>
                 </div>
-                <div className="expanded-menu-card flex flex-col gap-[6px] px-[12px] py-[15px] bg-[#EFEFEF] items-start justify-end w-full h-full rounded-[10px]">
+                <div
+                  className={`expanded-menu-card flex flex-col gap-[6px] px-[12px] py-[15px] bg-[#EFEFEF] items-start justify-end w-full ${
+                    isSmallScreen ? "h-auto" : "h-full"
+                  } rounded-[10px]`}
+                >
                   <span
                     className="font-medium pb-[0px] opacity-[50%] text-[12.25px] tracking-[0.25px]"
                     style={{

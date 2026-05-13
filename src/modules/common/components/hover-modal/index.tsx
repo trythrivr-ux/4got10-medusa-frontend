@@ -100,22 +100,29 @@ export default function HoverModal({
     }
 
     const rect = triggerRef.current.getBoundingClientRect()
-    const modalWidth = 350
-    const modalHeight = 200
+    const modalWidth = modalRef.current?.offsetWidth || 350
+    const modalHeight = modalRef.current?.offsetHeight || 200
     const windowWidth = window.innerWidth
     const windowHeight = window.innerHeight
+    const viewportPadding = 8
 
-    const wouldGoOffScreenRight = rect.left + modalWidth > windowWidth
+    const preferredLeft = rect.right - modalWidth
+    const left = Math.min(
+      Math.max(viewportPadding, preferredLeft),
+      Math.max(viewportPadding, windowWidth - modalWidth - viewportPadding)
+    )
     const wouldGoOffScreenBottom =
-      rect.bottom + topOffset + modalHeight > windowHeight
+      rect.bottom + topOffset + modalHeight > windowHeight - viewportPadding
+    const top = wouldGoOffScreenBottom
+      ? rect.top - modalHeight - topOffset
+      : rect.bottom + topOffset
 
     setPosition({
-      top: wouldGoOffScreenBottom
-        ? rect.top - modalHeight - topOffset
-        : rect.bottom + topOffset,
-      left: wouldGoOffScreenRight
-        ? Math.max(8, rect.right - modalWidth)
-        : rect.left,
+      top: Math.min(
+        Math.max(viewportPadding, top),
+        Math.max(viewportPadding, windowHeight - modalHeight - viewportPadding)
+      ),
+      left,
     })
   }
 
@@ -139,6 +146,7 @@ export default function HoverModal({
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true)
+      requestAnimationFrame(updatePosition)
     }
   }, [isOpen])
 
@@ -348,10 +356,10 @@ export default function HoverModal({
     )
   }
 
-  return (
+  return createPortal(
     <div
       ref={modalRef}
-      className={`fixed z-50 w-[350px] rounded-[12px] overflow-visible  ${className}`}
+      className={`fixed z-[9999] w-[min(350px,calc(100vw-16px))] rounded-[12px] overflow-visible ${className}`}
       style={{
         top: position.top,
         left: position.left,
@@ -370,6 +378,7 @@ export default function HoverModal({
       onMouseLeave={handleModalMouseLeave}
     >
       {modalContent}
-    </div>
+    </div>,
+    document.body
   )
 }

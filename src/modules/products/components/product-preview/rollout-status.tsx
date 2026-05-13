@@ -122,11 +122,7 @@ const RolloutStatus: React.FC<RolloutStatusProps> = ({
     )
   }
 
-  return (
-    <Button onClick={handleAddToCartClick} className="w-full" variant="primary">
-      Add to Cart
-    </Button>
-  )
+  return null
 }
 
 export default RolloutStatus

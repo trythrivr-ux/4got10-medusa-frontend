@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import gsap from "gsap"
 import { TransitionProvider } from "@/context/transition-context"
 import FourGotTenMenu from "@modules/layout/components/4got10-menu"
+import Image from "next/image"
 
 export default function CustomLayoutWrapper({
   children,
@@ -135,9 +136,26 @@ export default function CustomLayoutWrapper({
       >
         <div
           ref={curtainRef}
-          className="fixed inset-0 z-[999] bg-[#ffffff] pointer-events-none"
+          className="fixed inset-0 z-[999] bg-[#ffffff] pointer-events-none flex items-center justify-center"
           style={{ transform: "translateY(0%)" }}
-        />
+        >
+          <div className="flex items-center gap-[20px]">
+            <Image
+              src="/menu-icons/4got10-2/group-1.svg"
+              alt=""
+              width={100}
+              height={100}
+              className="w-fit max-h-[44px]"
+            />
+            <Image
+              src="/menu-icons/4got10-2/group-2.svg"
+              alt=""
+              width={100}
+              height={100}
+              className="w-fit max-h-[44px]"
+            />
+          </div>
+        </div>
         <main
           className={`relative w-full bg-[#efefef] h-full rounded-[12px] overflow-hidden ${
             customLayout ? "pt-[env(safe-area-inset-top)]" : ""

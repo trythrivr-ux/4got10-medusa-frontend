@@ -1,5 +1,6 @@
 "use client"
 
+import { Typography } from "@/components/ui"
 import { useEffect, useState } from "react"
 
 type CountdownTimerProps = {
@@ -7,17 +8,20 @@ type CountdownTimerProps = {
   onComplete?: () => void
 }
 
-export default function CountdownTimer({ targetDate, onComplete }: CountdownTimerProps) {
+export default function CountdownTimer({
+  targetDate,
+  onComplete,
+}: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(getTimeLeft())
 
   function getTimeLeft() {
     const now = new Date()
     const diff = targetDate.getTime() - now.getTime()
-    
+
     if (diff <= 0) {
       return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 }
     }
-    
+
     return {
       days: Math.floor(diff / (1000 * 60 * 60 * 24)),
       hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
@@ -31,7 +35,7 @@ export default function CountdownTimer({ targetDate, onComplete }: CountdownTime
     const interval = setInterval(() => {
       const remaining = getTimeLeft()
       setTimeLeft(remaining)
-      
+
       if (remaining.total <= 0) {
         clearInterval(interval)
         onComplete?.()
@@ -51,15 +55,28 @@ export default function CountdownTimer({ targetDate, onComplete }: CountdownTime
   // If more than a day, show days
   if (timeLeft.days > 0) {
     return (
-      <span className="countdown">
-        {timeLeft.days}d {format(timeLeft.hours)}:{format(timeLeft.minutes)}:{format(timeLeft.seconds)}
+      <span className="countdown flex flex-row gap-[5px]">
+        <Typography className="text-[12px]" variant="body">
+          {timeLeft.days}d
+        </Typography>
+        <Typography className="text-[12px]" variant="body">
+          {format(timeLeft.hours)}h
+        </Typography>
+        <Typography className="text-[12px]" variant="body">
+          {format(timeLeft.minutes)}m
+        </Typography>
+        <Typography className="text-[12px]" variant="body">
+          {format(timeLeft.seconds)}s
+        </Typography>
       </span>
     )
   }
 
   return (
     <span className="countdown">
-      {format(timeLeft.hours)}:{format(timeLeft.minutes)}:{format(timeLeft.seconds)}
+      <span>{format(timeLeft.hours)}</span>
+      <span>{format(timeLeft.minutes)}</span>
+      <span>{format(timeLeft.seconds)}</span>
     </span>
   )
 }

@@ -10,6 +10,7 @@ import Image from "next/image"
 import gsap from "gsap"
 import DeskScene from "@/modules/desk/components/desk-scene"
 import SimpleDeskScene from "@modules/desk/components/simple-desk-scene"
+import { Button, Typography } from "@/components/ui"
 
 export default function HomePage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -390,8 +391,48 @@ export default function HomePage() {
       ref={scrollContainerRef}
       className="h-h-[calc(100vh-12px)] w-full max-w-screen  bg-white overflow-hidden snap-y snap-mandatory no-scrollbar"
     >
+      <Image
+        src="/prototype/image-4.jpg"
+        alt=""
+        fill
+        className="object-cover"
+      />
+      <div className="absolute p-[12px] bottom-0 flex flex-row justify-between left-0 right-0 w-full h-fit">
+        <Image
+          src="/menu-icons/4got10-3/frame1.svg"
+          alt=""
+          width={100}
+          height={100}
+          className="w-[150px] phone:w-[280px]"
+        />
+        <Image
+          src="/menu-icons/4got10-3/frame2.svg"
+          alt=""
+          width={100}
+          height={100}
+          className="w-[150px] phone:w-[280px]"
+        />
+      </div>
+      {activeRollout && activeRollout.drop_date && (
+        <div className="absolute top-1/2 left-1/2 w-full px-[12px] -translate-x-1/2 -translate-y-1/2 z-10">
+          <Button
+            className="px-[16px] justify-between w-full bg-[#ffffff55]"
+            size="small"
+          >
+            <Typography className="text-[12px]" variant="body">
+              Releasing
+            </Typography>
+            <Typography className="text-[12px]" variant="body">
+              May
+            </Typography>
+            <Typography className="text-[12px]" variant="body">
+              16th
+            </Typography>
+          </Button>
+        </div>
+      )}
       {/* Snap 1: top menu */}
-      <div className="relative h-[calc(100vh-8px)] phone:h-[calc(100vh-18px)] pb-[8px] phone:pb-[18px] w-full snap-start flex items-center justify-center bg-white">
+      <div className="relative h-[calc(100vh-8px)] hidden phone:h-[calc(100vh-18px)] pb-[8px] phone:pb-[18px] w-full snap-start  items-center justify-center bg-white">
         {/* Snap 1:
         <div className=" h-full bg-[#f2feff] flex rounded-[12px] w-full items-center flex-col snap-start relative p-4">
           {activeRollout && (

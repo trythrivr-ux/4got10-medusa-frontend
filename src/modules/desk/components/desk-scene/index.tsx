@@ -53,9 +53,15 @@ const createPageGeometry = () => {
 interface DeskMagazineProps {
   frontCover?: string
   backCover?: string
+  /** When false, the magazine stays still (no Y-axis world spin). Default true. */
+  autoSpin?: boolean
 }
 
-const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
+const DeskMagazine = ({
+  frontCover,
+  backCover,
+  autoSpin = true,
+}: DeskMagazineProps) => {
   const groupRef = useRef<THREE.Group>(null)
   const pagesRef = useRef<THREE.Group[]>([])
   const dampedBendRef = useRef(0)
@@ -150,14 +156,19 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
     if (!groupRef.current) return
 
     // Continuous spin around world Y-axis (fixed vertical axis, regardless of tilt)
-    groupRef.current.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), delta * 0.3)
+    if (autoSpin) {
+      groupRef.current.rotateOnWorldAxis(
+        new THREE.Vector3(0, 1, 0),
+        delta * 0.3
+      )
+    }
 
     // Fixed bend amount - magazine stays slightly bent open
-    const bend = 0.05
+    const bend = autoSpin ? 0.05 : 0
     dampedBendRef.current = bend
 
     // Fixed page flip progress - more open, one side lifted up
-    const flipProgress = 0.008
+    const flipProgress = autoSpin ? 0.008 : 0
 
     // Per-page window size
     const pageWindowSize = (idx: number) => {
@@ -214,8 +225,8 @@ const DeskMagazine = ({ frontCover, backCover }: DeskMagazineProps) => {
   return (
     <group
       ref={groupRef}
-      position={[0, 1.9, 0]} // Higher up on display pedestal
-      rotation={[-Math.PI / -1.09, 3.8, 3]} // Lay flat
+      position={autoSpin ? [0, 1.9, 0] : [0, 0, 0]} // Higher up on display pedestal
+      rotation={autoSpin ? [-Math.PI / -1.09, 3.8, 3] : [0, 0, 0]} // Lay flat
       scale={[1.55, 1.55, 1.55]}
       castShadow
       receiveShadow
