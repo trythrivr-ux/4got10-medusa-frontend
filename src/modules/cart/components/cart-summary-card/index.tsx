@@ -2,7 +2,7 @@
 
 import { HttpTypes } from "@medusajs/types"
 import { convertToLocale } from "@lib/util/money"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import CheckoutCta from "@modules/cart/components/checkout-cta"
 import DiscountCode from "@modules/checkout/components/discount-code"
 
 type CartSummaryCardProps = {
@@ -91,13 +91,12 @@ const CartSummaryCard = ({ cart }: CartSummaryCardProps) => {
         />
       </div>
 
-      <LocalizedClientLink
-        href={`/checkout?step=${step}`}
-        className="mt-auto flex items-center justify-center rounded-[10px] bg-black px-[14px] py-[12px] text-[12px] font-medium text-white"
-        data-testid="summary-checkout-button"
-      >
-        Go to checkout
-      </LocalizedClientLink>
+      <CheckoutCta
+        cartId={cart.id}
+        step={step}
+        dataTestId="summary-checkout-button"
+        className="mt-auto w-full flex items-center justify-center rounded-[10px] bg-black px-[14px] py-[12px] text-[12px] font-medium text-white"
+      />
     </div>
   )
 }
