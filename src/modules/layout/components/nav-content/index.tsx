@@ -49,13 +49,13 @@ export default function NavContent({ regions, cartButton }: NavContentProps) {
         </div>
         {/** Column 2 - Cart & Account **/}
         <div className="flex-1 flex-row gap-[7px] basis-0 h-full flex items-center justify-end shrink-0">
-          {/** Sign Up - Hidden when scrolled **/}
+          {/** Account - Hidden when scrolled **/}
           <p
             className={`text-[#000000] text-[10.25px] pr-[5px] tracking-[1%] text-nowrap font-[family-name:var(--font-plus-jakarta-sans)] font-regular transition-all duration-300 overflow-hidden ${
               isScrolled ? "w-0 opacity-0 pr-0" : "w-auto opacity-100"
             }`}
           >
-            Sign Up
+            Account
           </p>
           {/** Search **/}
           <div className="bg-[#F1F1F1] flex-row gap-[5px] flex items-center justify-center rounded-full text-black text-[10.25px] tracking-[1%] aspect-square h-[28.5px] font-[family-name:var(--font-plus-jakarta-sans)] font-regular">

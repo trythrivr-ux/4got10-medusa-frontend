@@ -77,9 +77,9 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
 
   return (
     <div className="w-full relative">
-      <div className="flex flex-row w-full items-start">
+      <div className="flex flex-col w-full items-start phone:flex-row">
         {/* 2/3 sticky parent */}
-        <div className="w-[66.666%] flex flex-row items-end justify-end h-[calc(100vh-20px)] sticky top-0">
+        <div className="w-full phone:w-[66.666%] flex flex-row items-end justify-end h-[85vh] phone:h-[calc(100vh-20px)] phone:sticky phone:top-0">
           <div className="h-full w-full rounded-[48px] overflow-hidden">
             <div
               className="relative h-full w-full rounded-[48px] overflow-hidden"
@@ -98,19 +98,48 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
             </div>
           </div>
 
-          <div className="absolute h-fit w-full right-0 left-0 bottom-0 z-10 pl-[12px] pb-[12px]">
+          <div className="hidden phone:block absolute h-fit w-full right-0 left-0 bottom-0 z-10 pl-[12px] pb-[12px]">
             <div className="flex flex-row gap-[10px] bg-[#F9F9F980] h-[62px] p-[8px] rounded-[12px]">
               <MagazineProductActions
                 product={product}
                 region={region}
                 countryCode={countryCode}
+                rolloutDates={
+                  productRollout
+                    ? {
+                        drop_date: productRollout.drop_date,
+                        sold_out_date: productRollout.sold_out_date,
+                        announcement_date: productRollout.announcement_date,
+                      }
+                    : undefined
+                }
               />
             </div>
           </div>
         </div>
 
+        {/* Mobile add to cart wrapper - only visible on mobile */}
+        <div className="block phone:hidden w-full px-[12px]">
+          <div className="flex flex-row gap-[10px] bg-[#F9F9F980] h-[62px] p-[8px] rounded-[12px]">
+            <MagazineProductActions
+              product={product}
+              region={region}
+              countryCode={countryCode}
+              rolloutDates={
+                productRollout
+                  ? {
+                      drop_date: productRollout.drop_date,
+                      sold_out_date: productRollout.sold_out_date,
+                      announcement_date: productRollout.announcement_date,
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        </div>
+
         {/* 1/3 normal scrolling column */}
-        <div className="w-[33.333%] relative pt-[75px] flex flex-col gap-[10px] p-[12px] z-10">
+        <div className="w-full phone:w-[33.333%] relative pt-[12px] phone:pt-[75px] flex flex-col gap-[10px] p-[12px] z-10">
           <Button variant="backdrop" className="w-fit" size="small">
             <Typography className="opacity-[55%]" variant="subtitle2">
               Overview

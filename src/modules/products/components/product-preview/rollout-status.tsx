@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Button } from "@medusajs/ui"
+import { Button } from "@/components/ui"
 import CountdownTimer from "@modules/common/components/countdown-timer"
 import { useRouter } from "next/navigation"
 
@@ -86,7 +86,7 @@ const RolloutStatus: React.FC<RolloutStatusProps> = ({
 
   if (status === "sold-out") {
     return (
-      <Button disabled className="w-full" variant="secondary">
+      <Button disabled className="w-full">
         Sold Out
       </Button>
     )
@@ -94,31 +94,25 @@ const RolloutStatus: React.FC<RolloutStatusProps> = ({
 
   if (status === "coming-soon" && announcementDate) {
     return (
-      <div className="w-full p-4 bg-ui-fg-subtle/10 rounded-lg">
-        <p className="text-small-regular text-ui-fg-subtle mb-2 text-center">
-          Coming Soon
-        </p>
+      <Button className="w-full">
         <CountdownTimer
           key={`announcement-${announcementDate}`}
           targetDate={announcementDate}
           onComplete={handleCountdownComplete}
         />
-      </div>
+      </Button>
     )
   }
 
   if (status === "countdown" && dropDate) {
     return (
-      <div className="w-full p-4 bg-ui-fg-subtle/10 rounded-lg">
-        <p className="text-small-regular text-ui-fg-subtle mb-2 text-center">
-          Drops in:
-        </p>
+      <Button className="w-full">
         <CountdownTimer
           key={`drop-${dropDate}`}
           targetDate={dropDate}
           onComplete={handleCountdownComplete}
         />
-      </div>
+      </Button>
     )
   }
 

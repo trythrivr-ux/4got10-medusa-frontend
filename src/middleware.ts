@@ -84,9 +84,42 @@ async function getCountryCode(
       countryCode = urlCountryCode
     } else if (vercelCountryCode && regionMap.has(vercelCountryCode)) {
       countryCode = vercelCountryCode
-    } else if (regionMap.has(DEFAULT_REGION)) {
+    } else {
+      // Fallback to geolocation API for non-Vercel environments
+      try {
+        // First try to get IP from headers
+        const ip =
+          request.headers.get("x-forwarded-for")?.split(",")[0] ||
+          request.headers.get("x-real-ip")
+
+        let geoUrl = "https://ipapi.co/json/"
+        if (ip) {
+          geoUrl = `https://ipapi.co/${ip}/json/`
+        }
+
+        const geoResponse = await fetch(geoUrl, {
+          cache: "no-store",
+          next: { revalidate: 0 },
+        })
+
+        if (geoResponse.ok) {
+          const geoData = await geoResponse.json()
+          const detectedCountry = geoData.country_code?.toLowerCase()
+
+          if (detectedCountry && regionMap.has(detectedCountry)) {
+            countryCode = detectedCountry
+          }
+        }
+      } catch (geoError) {
+        // Silently fail geolocation and fall back to defaults
+        console.log("Geolocation API failed, using default region")
+      }
+    }
+
+    // Fallback to default region if still no country code
+    if (!countryCode && regionMap.has(DEFAULT_REGION)) {
       countryCode = DEFAULT_REGION
-    } else if (regionMap.keys().next().value) {
+    } else if (!countryCode && regionMap.keys().next().value) {
       countryCode = regionMap.keys().next().value
     }
 

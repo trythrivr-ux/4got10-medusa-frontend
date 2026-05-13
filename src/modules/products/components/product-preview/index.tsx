@@ -57,16 +57,14 @@ export default async function ProductPreview({
         </div>
 
         {/* bottom meta */}
-        <div className="flex items-start justify-between px-[4px] pt-[10px]">
-          <div className="flex flex-col">
-            <span className="text-[11px] text-black/60">
-              {product.categories?.[0]?.name || "Magazine"}
-            </span>
+        <div className="w-full flex flex-col px-[4px] pt-[10px]">
+          <span className="text-[11px] text-black/60">
+            {product.categories?.[0]?.name || "Magazine"}
+          </span>
+          <div className="w-full flex justify-between items-center">
             <Text className="text-[14px]" data-testid="product-title">
               {product.title}
             </Text>
-          </div>
-          <div className="flex items-center gap-x-2">
             {cheapestPrice && <PreviewPrice price={cheapestPrice} />}
           </div>
         </div>

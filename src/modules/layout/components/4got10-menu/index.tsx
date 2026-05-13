@@ -1854,7 +1854,7 @@ export default function FourGotTenMenu({
               <div
                 className={`expanded-menu-top-row ${
                   isSmallScreen
-                    ? "flex-col gap-[20px]"
+                    ? "flex flex-col gap-[25px]"
                     : "flex flex-row gap-[25px]"
                 } px-[2px] py-[22px] h-fit w-full`}
               >
@@ -1918,7 +1918,7 @@ export default function FourGotTenMenu({
                       </span>
                     </TransitionLink>
                   </div>
-                  <div className="flex flex-row gap-[10px] max-h-[24px]">
+                  <div className=" flex-row gap-[10px] max-h-[24px] hidden">
                     <TransitionLink
                       href={toMenuHref("Blog")}
                       className="flex flex-row items-center menu-item"
@@ -1934,7 +1934,7 @@ export default function FourGotTenMenu({
                       </span>
                     </TransitionLink>
                   </div>
-                  <div className="flex flex-row gap-[10px] max-h-[24px]">
+                  <div className=" flex-row gap-[10px] max-h-[24px] hidden">
                     <TransitionLink
                       href={toMenuHref("Features")}
                       className="relative flex flex-row items-center menu-item"
@@ -2068,7 +2068,24 @@ export default function FourGotTenMenu({
                   </span>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
                     <TransitionLink
-                      href={toMenuHref("Sign Up")}
+                      href={`/${countryCode}/account`}
+                      className="flex flex-row items-center menu-item"
+                    >
+                      {isMenuExpanded && (
+                        <div className="menu-line h-[1.5px] w-0 mr-0 rounded-full bg-black opacity-0 transition-all duration-200"></div>
+                      )}
+                      <span
+                        className={`${
+                          isMenuExpanded ? "opacity-100" : "opacity-0"
+                        } transition-opacity duration-200`}
+                      >
+                        Account
+                      </span>
+                    </TransitionLink>
+                  </div>
+                  <div className="flex flex-row gap-[10px] max-h-[24px]">
+                    <TransitionLink
+                      href={`/${countryCode}/account`}
                       className="flex flex-row items-center menu-item"
                     >
                       {isMenuExpanded && (
@@ -2078,7 +2095,7 @@ export default function FourGotTenMenu({
                         className="font-medium text-[15.25px] tracking-[0.15px]"
                         style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
                       >
-                        Sign Up
+                        Account
                       </span>
                     </TransitionLink>
                   </div>
@@ -2133,7 +2150,7 @@ export default function FourGotTenMenu({
                 </div>
               </div>
               <div
-                className={`expanded-menu-bottom-row ${
+                className={`expanded-menu-bottom-row hidden ${
                   isSmallScreen
                     ? "flex-col gap-[8px] h-auto"
                     : "flex flex-row gap-[8px] h-[320px]"

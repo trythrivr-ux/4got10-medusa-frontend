@@ -138,23 +138,19 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
   return (
     <div className="flex gap-2 items-center justify-center">
       {timeLeft.days > 0 && (
-        <div className="flex flex-col items-center">
-          <span className="text-2xl font-bold">{timeLeft.days}</span>
-          <span className="text-xs text-ui-fg-subtle">Days</span>
-        </div>
+        <span className="text-[10px] font-medium">
+          {String(timeLeft.days).padStart(2, "0")}d
+        </span>
       )}
-      <div className="flex flex-col items-center">
-        <span className="text-2xl font-bold">{timeLeft.hours}</span>
-        <span className="text-xs text-ui-fg-subtle">Hours</span>
-      </div>
-      <div className="flex flex-col items-center">
-        <span className="text-2xl font-bold">{timeLeft.minutes}</span>
-        <span className="text-xs text-ui-fg-subtle">Minutes</span>
-      </div>
-      <div className="flex flex-col items-center">
-        <span className="text-2xl font-bold">{timeLeft.seconds}</span>
-        <span className="text-xs text-ui-fg-subtle">Seconds</span>
-      </div>
+      <span className="text-[10px] font-medium">
+        {String(timeLeft.hours).padStart(2, "0")}h
+      </span>
+      <span className="text-[10px] font-medium">
+        {String(timeLeft.minutes).padStart(2, "0")}m
+      </span>
+      <span className="text-[10px] font-medium">
+        {String(timeLeft.seconds).padStart(2, "0")}s
+      </span>
     </div>
   )
 }

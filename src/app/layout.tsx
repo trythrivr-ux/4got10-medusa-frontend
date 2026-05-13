@@ -8,6 +8,7 @@ import "styles/globals.css"
 import { listRegions } from "@lib/data/regions"
 import { CustomLayoutProvider } from "@/context/custom-layout-context"
 import CustomLayoutWrapper from "@/modules/layout/components/custom-layout-wrapper"
+import GeolocationRedirect from "@/components/geolocation-redirect"
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -28,6 +29,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       <body className="bg-[#ffffff] overflow-x-hidden">
         <CustomLayoutProvider>
           <CustomLayoutWrapper regions={regions}>
+            <GeolocationRedirect />
             {props.children}
           </CustomLayoutWrapper>
         </CustomLayoutProvider>
