@@ -7,6 +7,7 @@ import { getBaseURL } from "@lib/util/env"
 import { CustomLayoutProvider } from "@/context/custom-layout-context"
 import { CookieBanner } from "@/components/cookie-banner"
 import WebsiteLockGuard from "@/components/website-lock-guard"
+import PreviewUnlock from "@/components/preview-unlock"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -25,6 +26,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
             <CookieBanner />
           </ErrorBoundary>
         </WebsiteLockGuard>
+        <PreviewUnlock />
       </CustomLayoutProvider>
     </>
   )

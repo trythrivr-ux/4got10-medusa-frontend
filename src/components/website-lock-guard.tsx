@@ -70,7 +70,12 @@ export default function WebsiteLockGuard({
 
     console.log("Is home page:", isHomePage)
 
-    if (isLocked && !isHomePage) {
+    // Check if the user has already entered the preview password
+    const hasBypassCookie = document.cookie
+      .split(";")
+      .some((c) => c.trim().startsWith("_site_preview="))
+
+    if (isLocked && !isHomePage && !hasBypassCookie) {
       console.log("Redirecting to home page")
       const countryCode = pathname.split("/")[1] || "us"
       router.push(`/${countryCode}`)

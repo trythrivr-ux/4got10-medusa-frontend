@@ -127,7 +127,14 @@ export async function login(_currentState: unknown, formData: FormData) {
         revalidateTag(customerCacheTag)
       })
   } catch (error: any) {
-    return error.toString()
+    const raw = (error?.toString?.() as string) || ""
+    // Normalize common auth errors to a friendly message
+    const friendly =
+      /401|unauthorized|invalid credentials|wrong password/i.test(raw) ||
+      /404|Cannot POST \/store\/auth\/customer\/emailpass/i.test(raw)
+        ? "Incorrect email or password"
+        : "Unable to sign in. Please try again."
+    return friendly
   }
 
   try {

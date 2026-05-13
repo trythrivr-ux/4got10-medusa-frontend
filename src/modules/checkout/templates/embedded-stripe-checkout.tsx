@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { initiatePaymentSession } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import CheckoutSummary from "./checkout-summary"
 
@@ -20,6 +21,11 @@ export default function EmbeddedStripeCheckout({
   useEffect(() => {
     const createStripeCheckoutSession = async () => {
       try {
+        // Ensure payment collection + Stripe payment session exist for this cart
+        await initiatePaymentSession(cart as any, {
+          provider_id: "pp_stripe_stripe",
+        })
+
         const response = await fetch(`/api/create-checkout-session`, {
           method: "POST",
           headers: {

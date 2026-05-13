@@ -123,10 +123,19 @@ export async function getOrSetCart(countryCode: string) {
     throw new Error(`Region not found for country code: ${countryCode}`)
   }
 
-  let cart = await retrieveCart(undefined, "id,region_id")
+  let cart = await retrieveCart(undefined, "id,region_id,completed_at,status")
 
   const headers = {
     ...(await getAuthHeaders()),
+  }
+
+  // If current cookie points to a completed cart, clear it so we create a new one
+  if (
+    cart &&
+    ((cart as any).completed_at || (cart as any).status === "completed")
+  ) {
+    await removeCartId()
+    cart = null
   }
 
   if (!cart) {
@@ -250,6 +259,20 @@ export async function updateLineItem({
     throw new Error("Missing cart ID when updating line item")
   }
 
+  // If the cart is completed, clear cookie and abort gracefully
+  const current = await retrieveCart(cartId, "id,completed_at,status").catch(
+    () => null
+  )
+  if (
+    current &&
+    ((current as any).completed_at || (current as any).status === "completed")
+  ) {
+    await removeCartId()
+    throw new Error(
+      "Cart was already completed. A new cart has been initialized."
+    )
+  }
+
   const headers = {
     ...(await getAuthHeaders()),
   }
@@ -275,6 +298,19 @@ export async function deleteLineItem(lineId: string) {
 
   if (!cartId) {
     throw new Error("Missing cart ID when deleting line item")
+  }
+
+  const current = await retrieveCart(cartId, "id,completed_at,status").catch(
+    () => null
+  )
+  if (
+    current &&
+    ((current as any).completed_at || (current as any).status === "completed")
+  ) {
+    await removeCartId()
+    throw new Error(
+      "Cart was already completed. A new cart has been initialized."
+    )
   }
 
   const headers = {

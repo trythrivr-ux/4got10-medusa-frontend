@@ -79,6 +79,7 @@ export const setCartId = async (cartId: string) => {
     // Use lax so the cookie survives top-level cross-site redirects (e.g., from Stripe)
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
+    path: "/",
   })
 }
 
@@ -86,5 +87,6 @@ export const removeCartId = async () => {
   const cookies = await nextCookies()
   cookies.set("_medusa_cart_id", "", {
     maxAge: -1,
+    path: "/",
   })
 }

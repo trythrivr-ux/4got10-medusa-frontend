@@ -14,6 +14,7 @@ import HoverModal, { ModalB } from "@modules/common/components/hover-modal"
 import { MOBILE_MAX_WIDTH } from "@lib/breakpoints"
 import { TransitionLink } from "@/components/transition-link"
 import { CountdownTimer } from "@/components/countdown-timer"
+import SearchModal from "@modules/common/components/search-modal"
 
 const Pill = ({
   children,
@@ -97,6 +98,7 @@ export default function FourGotTenMenu({
   const [latestMagazine, setLatestMagazine] =
     useState<HttpTypes.StoreProduct | null>(null)
   const [cartOpen, setCartOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const [rolloutDropDate, setRolloutDropDate] = useState<Date | null>(null)
   const [showCountdown, setShowCountdown] = useState(false)
@@ -1266,15 +1268,26 @@ export default function FourGotTenMenu({
               data-fourgot10-nonpill="true"
               className={`flex-1 rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] h-full flex items-center gap-[6px] fourgot10-hide-on-small`}
             >
-              <input
-                type="text"
-                placeholder="Search products..."
-                className={`h-full rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] flex items-center justify-between cursor-pointer transition-all duration-250 ease-out fourgot10-full-width-on-small w-full text-[12.5px] tracking-[0.01em] outline-none focus:outline-none ${
-                  isSmallScreen && isStuck && !isMenuExpanded
-                    ? "shadow-[0_0_30px_rgba(239,239,239)]"
-                    : ""
-                }`}
-              />
+              <button
+                onClick={() => setSearchOpen(true)}
+                className={`h-full rounded-[10px] bg-[#FFFFFF] px-[9px] py-[9px] flex items-center gap-[7px] cursor-pointer transition-all duration-250 ease-out w-full text-[12.5px] tracking-[0.01em] text-[#00000045] text-left`}
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="shrink-0"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                Search products...
+              </button>
             </div>
             <div
               ref={accountNewsRef}
@@ -2066,23 +2079,7 @@ export default function FourGotTenMenu({
                   >
                     Others
                   </span>
-                  <div className="flex flex-row gap-[10px] max-h-[24px]">
-                    <TransitionLink
-                      href={`/${countryCode}/account`}
-                      className="flex flex-row items-center menu-item"
-                    >
-                      {isMenuExpanded && (
-                        <div className="menu-line h-[1.5px] w-0 mr-0 rounded-full bg-black opacity-0 transition-all duration-200"></div>
-                      )}
-                      <span
-                        className={`${
-                          isMenuExpanded ? "opacity-100" : "opacity-0"
-                        } transition-opacity duration-200`}
-                      >
-                        Account
-                      </span>
-                    </TransitionLink>
-                  </div>
+                  <div className="flex flex-row gap-[10px] max-h-[24px]"></div>
                   <div className="flex flex-row gap-[10px] max-h-[24px]">
                     <TransitionLink
                       href={`/${countryCode}/account`}
@@ -2253,6 +2250,14 @@ export default function FourGotTenMenu({
           </div>
         )}
       </div>
+
+      <SearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        countryCode={countryCode}
+        regionId={cart?.region?.id}
+        currencyCode={cart?.region?.currency_code}
+      />
     </>
   )
 }
