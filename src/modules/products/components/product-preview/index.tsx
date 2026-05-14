@@ -41,7 +41,7 @@ export default async function ProductPreview({
               VOL
             </div>
           </div>
-          <div className="pointer-events-none absolute right-[8px] top-[8px] select-none">
+          <div className="pointer-events-none  opacity-0 absolute right-[8px] top-[8px] select-none">
             <div className="rounded-full bg-[#EFEFEF] px-[8px] py-[4px] text-[10px] leading-none">
               IV
             </div>

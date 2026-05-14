@@ -158,7 +158,7 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
                   <Typography className="opacity-[55%]" variant="subtitle1">
                     Magazine
                   </Typography>
-                  <Typography className="opacity-[55%]" variant="subtitle1">
+                  <Typography className="opacity-[0%]" variant="subtitle1">
                     Volume II
                   </Typography>
                 </div>
