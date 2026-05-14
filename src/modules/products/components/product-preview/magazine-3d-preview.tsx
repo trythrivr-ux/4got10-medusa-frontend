@@ -3,7 +3,6 @@
 import { Canvas, useFrame } from "@react-three/fiber"
 import { Suspense, useRef, useMemo, useEffect, useState } from "react"
 import * as THREE from "three"
-import { Environment } from "@react-three/drei"
 
 const PAGE_WIDTH = 1.28
 const PAGE_HEIGHT = 1.71
@@ -116,11 +115,11 @@ const Magazine3D = ({
 
       const material = new THREE.MeshStandardMaterial({
         side: THREE.DoubleSide,
-        roughness: 0.55,
-        metalness: 0.15,
-        envMapIntensity: 0.6,
+        roughness: 0.92,
+        metalness: 0.0,
+        envMapIntensity: 0.0,
         bumpMap: grainTexture,
-        bumpScale: 0.015,
+        bumpScale: 0.012,
         color: new THREE.Color("#ffffff"),
       })
 
@@ -259,7 +258,7 @@ const Magazine3DPreview = ({
           antialias: true,
           outputColorSpace: THREE.SRGBColorSpace,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.15,
+          toneMappingExposure: 0.9,
           alpha: true,
         }}
         camera={{
@@ -274,9 +273,17 @@ const Magazine3DPreview = ({
         }}
       >
         <Suspense fallback={null}>
-          <Environment preset="studio" />
-          <directionalLight position={[5, 5, 5]} intensity={0.1} />
-          <ambientLight intensity={0.1} />
+          <directionalLight
+            position={[5, 5, 5]}
+            intensity={2.5}
+            color="#fff8f0"
+          />
+          <directionalLight
+            position={[-4, 3, 2]}
+            intensity={1.0}
+            color="#e8f0ff"
+          />
+          <ambientLight intensity={2.0} color="#ffffff" />
           <Magazine3D
             coverUrl={coverUrl}
             isHovered={isHovered}
