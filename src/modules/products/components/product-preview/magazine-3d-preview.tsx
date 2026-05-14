@@ -183,7 +183,7 @@ const Magazine3D = ({
 
       return { mesh, skeleton }
     })
-  }, [coverUrl, grainTexture])
+  }, [coverBlobUrl, coverUrl, imageBlobUrls, productImages, grainTexture])
 
   useFrame((state, delta) => {
     if (!groupRef.current) return

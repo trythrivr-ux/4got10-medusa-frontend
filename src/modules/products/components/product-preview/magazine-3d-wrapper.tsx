@@ -13,12 +13,14 @@ export default function Magazine3DWrapper({
   const [isHovered, setIsHovered] = useState(false)
   const [coverBlobUrl, setCoverBlobUrl] = useState<string | undefined>()
   const [imageBlobUrls, setImageBlobUrls] = useState<string[] | undefined>()
+  const [blobsReady, setBlobsReady] = useState(false)
   const blobUrlsRef = useRef<string[]>([])
 
   useEffect(() => {
+    setBlobsReady(false)
+
     const fetchAsBlob = async (url: string): Promise<string | null> => {
       try {
-        // Use proxy API to bypass CORS
         const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`
         const response = await fetch(proxyUrl)
         if (!response.ok) return null
@@ -32,7 +34,6 @@ export default function Magazine3DWrapper({
     }
 
     const loadImages = async () => {
-      // Clean up previous blob URLs
       blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url))
       blobUrlsRef.current = []
 
@@ -45,6 +46,8 @@ export default function Magazine3DWrapper({
         )
         setImageBlobUrls(blobs.filter((b): b is string => b !== null))
       }
+
+      setBlobsReady(true)
     }
 
     loadImages()
@@ -56,17 +59,27 @@ export default function Magazine3DWrapper({
 
   return (
     <div
-      className="w-full h-full"
+      className="w-full h-full relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Magazine3DPreview
-        coverUrl={coverUrl}
-        isHovered={isHovered}
-        productImages={productImages}
-        coverBlobUrl={coverBlobUrl}
-        imageBlobUrls={imageBlobUrls}
-      />
+      {/* Skeleton shown while blobs are fetching */}
+      {!blobsReady && (
+        <div className="absolute inset-0 rounded-[8px] overflow-hidden">
+          <div className="w-full h-full bg-gradient-to-br from-[#e8e8e8] to-[#d8d8d8] animate-pulse rounded-[8px]" />
+        </div>
+      )}
+
+      {/* 3D Canvas — only mounted once blobs are ready so textures load correctly on first render */}
+      {blobsReady && (
+        <Magazine3DPreview
+          coverUrl={coverUrl}
+          isHovered={isHovered}
+          productImages={productImages}
+          coverBlobUrl={coverBlobUrl}
+          imageBlobUrls={imageBlobUrls}
+        />
+      )}
     </div>
   )
 }
