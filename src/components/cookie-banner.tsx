@@ -27,27 +27,30 @@ export function CookieBanner() {
   if (hasAcceptedCookies) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 text-white p-4 shadow-lg">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex-1">
-          <p className="text-sm">
-            <span className="font-semibold">Cookies:</span> We use cookies to enhance your experience and analyze site traffic. 
-            By continuing to use our site, you agree to our use of cookies.
+    <div className="fixed bottom-4 left-0 right-0 z-[9998] flex justify-center px-4 pointer-events-none">
+      <div
+        className="w-full max-w-[640px] bg-white rounded-[16px] shadow-2xl overflow-hidden pointer-events-auto"
+        style={{ fontFamily: "Plus Jakarta Sans, sans-serif" }}
+      >
+        <div className="flex items-center gap-[16px] px-[20px] py-[18px]">
+          <p className="flex-1 text-[13px] font-medium text-[#00000070] leading-relaxed">
+            <span className="text-black font-semibold">Cookies</span> — We use
+            cookies to enhance your experience and analyze site traffic.
           </p>
-        </div>
-        <div className="flex gap-3 flex-shrink-0">
-          <button
-            onClick={handleDecline}
-            className="px-4 py-2 text-sm border border-gray-600 rounded hover:bg-gray-800 transition-colors"
-          >
-            Decline
-          </button>
-          <button
-            onClick={handleAccept}
-            className="px-4 py-2 text-sm bg-white text-gray-900 rounded hover:bg-gray-200 transition-colors font-medium"
-          >
-            Accept All
-          </button>
+          <div className="flex items-center gap-[8px] shrink-0">
+            <button
+              onClick={handleDecline}
+              className="text-[11px] font-medium text-[#00000060] hover:text-black border border-[#e5e5e5] rounded-full px-[12px] py-[5px] transition-colors"
+            >
+              Decline
+            </button>
+            <button
+              onClick={handleAccept}
+              className="text-[11px] font-medium text-white bg-black hover:bg-[#222] border border-black rounded-full px-[12px] py-[5px] transition-colors"
+            >
+              Accept
+            </button>
+          </div>
         </div>
       </div>
     </div>

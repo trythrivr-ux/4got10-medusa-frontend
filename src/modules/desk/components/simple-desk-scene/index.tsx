@@ -81,6 +81,7 @@ const DeskMagazine = ({
   const pagesRef = useRef<THREE.Group[]>([])
   const dampedBendRef = useRef(0)
   const hasInitDropRef = useRef(false)
+  const hasInitRotRef = useRef(false)
   const [animateIn, setAnimateIn] = useState(true)
   const [visible, setVisible] = useState(true)
 
@@ -249,6 +250,19 @@ const DeskMagazine = ({
     })
   }, [frontCover, backCover, grainTexture])
 
+  useEffect(() => {
+    if (!groupRef.current) return
+    const cameraPos = new THREE.Vector3(...CAMERA_POSITION)
+    const direction = new THREE.Vector3()
+      .subVectors(cameraPos, finalPos)
+      .normalize()
+    groupRef.current.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      direction
+    )
+    hasInitRotRef.current = true
+  }, [finalPos])
+
   useFrame((state, delta) => {
     if (!groupRef.current) return
 
@@ -362,24 +376,6 @@ const DeskMagazine = ({
           ? ([startPos.x, startPos.y, startPos.z] as [number, number, number])
           : ([finalPos.x, finalPos.y, finalPos.z] as [number, number, number])
       }
-      rotation={(() => {
-        const cameraPos = new THREE.Vector3(...CAMERA_POSITION)
-        const magazinePos = animateIn ? startPos : finalPos
-
-        const direction = new THREE.Vector3()
-          .subVectors(cameraPos, magazinePos)
-          .normalize()
-
-        const rotation = new THREE.Euler()
-        rotation.setFromQuaternion(
-          new THREE.Quaternion().setFromUnitVectors(
-            new THREE.Vector3(0, 0, 1),
-            direction
-          )
-        )
-
-        return [rotation.x, rotation.y, rotation.z] as [number, number, number]
-      })()}
       scale={[1.395, 1.395, 1.395]}
     >
       {pages.map((page, index) => {
