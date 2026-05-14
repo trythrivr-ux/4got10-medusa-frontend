@@ -5,6 +5,7 @@ import { deleteLineItem, updateLineItem } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { useState } from "react"
+import Image from "next/image"
 
 type CartCardProps = {
   cart: HttpTypes.StoreCart
@@ -178,13 +179,29 @@ const CartCard = ({ cart }: CartCardProps) => {
                     onClick={() => handleQuantity(item.id, item.quantity - 1)}
                     disabled={isPending}
                   >
-                    Minus
+                    <div className="h-[10px] flex items-center justify-center">
+                      <Image
+                        alt=""
+                        src="/icons/minus.svg"
+                        width={10}
+                        height={10}
+                        className="w-[6px] h-[6px]"
+                      />
+                    </div>
                   </Pill>
                   <Pill
                     onClick={() => handleQuantity(item.id, item.quantity + 1)}
                     disabled={isPending}
                   >
-                    Plus
+                    <div className="h-[10px] flex items-center justify-center">
+                      <Image
+                        alt=""
+                        src="/icons/plus.svg"
+                        width={10}
+                        height={10}
+                        className="w-[6px] h-[6px]"
+                      />
+                    </div>
                   </Pill>
                 </div>
               </div>
