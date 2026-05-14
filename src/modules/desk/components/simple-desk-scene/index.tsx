@@ -28,6 +28,39 @@ const CAMERA_TARGET: [number, number, number] = [-0.13, 0.384, 0.949]
 const CAMERA_FOV = 30
 const ORBIT_TARGET: [number, number, number] = [-0.13, 0.384, 0.949]
 
+// Helper: detect legacy/low-power mobile devices (older iPhones, missing WebGL2, or tiny device memory)
+const isLegacyMobile = () => {
+  if (typeof window === "undefined") return false
+  const ua = navigator.userAgent || ""
+  const isiPhone = /iPhone/.test(ua)
+  // Parse iOS major version from "CPU iPhone OS 13_3 like Mac OS X"
+  let iosMajor: number | null = null
+  const m = ua.match(/OS (\d+)_/)
+  if (m && m[1]) iosMajor = parseInt(m[1], 10)
+
+  // Check WebGL2 support (older Safari lacks it)
+  let hasWebGL2 = false
+  try {
+    const canvas = document.createElement("canvas")
+    const gl2 = canvas.getContext("webgl2")
+    hasWebGL2 = !!gl2
+  } catch {
+    hasWebGL2 = false
+  }
+
+  // Very low device memory (not available on iOS Safari; present on some Android/Chrome)
+  // Treat <= 3GB as low power when available
+  const dm: number | undefined = (navigator as any).deviceMemory
+  const veryLowMemory = typeof dm === "number" && dm > 0 && dm <= 3
+
+  // Heuristics:
+  // - Older iPhones with iOS < 15
+  // - No WebGL2 support
+  // - Extremely low reported memory
+  const legacyIOS = isiPhone && iosMajor != null && iosMajor < 15
+  return legacyIOS || !hasWebGL2 || veryLowMemory
+}
+
 // Create page geometry with bones for page curl effect
 const createPageGeometry = (segments = PAGE_SEGMENTS) => {
   const segWidth = PAGE_WIDTH / segments
@@ -846,10 +879,7 @@ const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
   const [lowPower, setLowPower] = useState(false)
 
   useEffect(() => {
-    const isMobile =
-      (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0) ||
-      window.innerWidth < 768
-    setLowPower(isMobile)
+    setLowPower(isLegacyMobile())
   }, [])
 
   useEffect(() => {

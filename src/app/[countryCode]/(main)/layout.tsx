@@ -11,6 +11,29 @@ import PreviewUnlock from "@/components/preview-unlock"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
+  title: "4got10 Magazine",
+  description:
+    "4got10 is a limited-edition culture magazine. Discover the stories the world forgot — music, fashion, art, and culture.",
+  openGraph: {
+    title: "4got10 Magazine",
+    description:
+      "A limited-edition culture magazine covering music, fashion, art, and the stories the world forgot.",
+    images: [
+      {
+        url: "/api/og/store",
+        width: 1200,
+        height: 630,
+        alt: "4got10 Magazine",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "4got10 Magazine",
+    description:
+      "A limited-edition culture magazine covering music, fashion, art, and the stories the world forgot.",
+    images: ["/api/og/store"],
+  },
 }
 
 export default async function PageLayout(props: { children: React.ReactNode }) {

@@ -98,13 +98,39 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     notFound()
   }
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "https://www.4got10mag.com"
+
+  const ogImageUrl = product.thumbnail
+    ? `${baseUrl}/api/og/product?thumbnail=${encodeURIComponent(
+        product.thumbnail
+      )}&title=${encodeURIComponent(product.title ?? "")}`
+    : `${baseUrl}/opengraph-image.jpg`
+
+  const description =
+    product.description ||
+    `${product.title} — a limited-edition issue from 4got10 Magazine.`
+
   return {
-    title: `${product.title} | Medusa Store`,
-    description: `${product.title}`,
+    title: product.title ?? handle,
+    description,
     openGraph: {
-      title: `${product.title} | Medusa Store`,
-      description: `${product.title}`,
-      images: product.thumbnail ? [product.thumbnail] : [],
+      title: `${product.title} | 4got10 Magazine`,
+      description,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: product.title ?? "4got10 Magazine",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.title} | 4got10 Magazine`,
+      description,
+      images: [ogImageUrl],
     },
   }
 }

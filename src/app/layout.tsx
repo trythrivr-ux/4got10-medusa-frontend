@@ -19,6 +19,52 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
+  title: {
+    default: "4got10 Magazine",
+    template: "%s | 4got10 Magazine",
+  },
+  description:
+    "4got10 is a limited-edition culture magazine covering music, fashion, art, and the stories the world forgot.",
+  keywords: [
+    "4got10",
+    "magazine",
+    "culture",
+    "music",
+    "fashion",
+    "art",
+    "limited edition",
+  ],
+  authors: [{ name: "4got10" }],
+  creator: "4got10",
+  publisher: "4got10",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "4got10 Magazine",
+    title: "4got10 Magazine",
+    description:
+      "A limited-edition culture magazine covering music, fashion, art, and the stories the world forgot.",
+    images: [
+      {
+        url: "/api/og/store",
+        width: 1200,
+        height: 630,
+        alt: "4got10 Magazine",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@4got10mag",
+    title: "4got10 Magazine",
+    description:
+      "A limited-edition culture magazine covering music, fashion, art, and the stories the world forgot.",
+    images: ["/api/og/store"],
+  },
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
