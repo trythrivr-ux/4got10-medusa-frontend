@@ -13,6 +13,7 @@ export const listRegions = async () => {
   return sdk.client
     .fetch<{ regions: HttpTypes.StoreRegion[] }>(`/store/regions`, {
       method: "GET",
+      query: { fields: "*countries", limit: 500 },
       next,
       cache: "force-cache",
     })
@@ -62,14 +63,11 @@ export const getRegion = async (countryCode: string) => {
       ? regionMap.get(countryCode)
       : regionMap.get("us")
 
-    if (!region) {
+    if (!region && regionMap.size > 0) {
       console.error(
-        `[getRegion] No region found for countryCode=${countryCode}. Available: ${Array.from(
-          regionMap.keys()
-        )
-          .slice(0, 10)
-          .join(",")}`
+        `[getRegion] No exact region for countryCode=${countryCode}, falling back to first available`
       )
+      return regionMap.values().next().value
     }
 
     return region
