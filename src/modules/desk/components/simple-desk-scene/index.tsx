@@ -29,12 +29,13 @@ const CAMERA_FOV = 30
 const ORBIT_TARGET: [number, number, number] = [-0.13, 0.384, 0.949]
 
 // Create page geometry with bones for page curl effect
-const createPageGeometry = () => {
+const createPageGeometry = (segments = PAGE_SEGMENTS) => {
+  const segWidth = PAGE_WIDTH / segments
   const geometry = new THREE.BoxGeometry(
     PAGE_WIDTH,
     PAGE_HEIGHT,
     PAGE_DEPTH,
-    PAGE_SEGMENTS,
+    segments,
     1,
     1
   )
@@ -48,8 +49,8 @@ const createPageGeometry = () => {
   for (let i = 0; i < position.count; i++) {
     vertex.fromBufferAttribute(position, i)
     const x = vertex.x
-    const skinIndex = Math.max(0, Math.floor(x / SEGMENT_WIDTH))
-    const skinWeight = (x % SEGMENT_WIDTH) / SEGMENT_WIDTH
+    const skinIndex = Math.max(0, Math.floor(x / segWidth))
+    const skinWeight = (x % segWidth) / segWidth
     skinIndexes.push(skinIndex, skinIndex + 1, 0, 0)
     skinWeights.push(1 - skinWeight, skinWeight, 0, 0)
   }
@@ -70,13 +71,17 @@ interface DeskMagazineProps {
   frontCover?: string
   backCover?: string
   scrollProgressRef?: React.MutableRefObject<number>
+  lowPower?: boolean
 }
 
 const DeskMagazine = ({
   frontCover,
   backCover,
   scrollProgressRef,
+  lowPower = false,
 }: DeskMagazineProps) => {
+  const numPages = lowPower ? 3 : NUM_PAGES
+  const numSegments = lowPower ? 10 : PAGE_SEGMENTS
   const groupRef = useRef<THREE.Group>(null)
   const pagesRef = useRef<THREE.Group[]>([])
   const dampedBendRef = useRef(0)
@@ -85,8 +90,9 @@ const DeskMagazine = ({
   const [animateIn, setAnimateIn] = useState(true)
   const [visible, setVisible] = useState(true)
 
-  // Create reflective spheres around the magazine
+  // Create reflective spheres around the magazine (skip on low-power devices)
   const spheres = useMemo(() => {
+    if (lowPower) return []
     return Array.from({ length: 8 }, (_, i) => {
       const angle = (i / 8) * Math.PI * 2
       const radius = 3.5
@@ -174,11 +180,11 @@ const DeskMagazine = ({
 
   // Create pages with textures
   const pages = useMemo(() => {
-    return Array.from({ length: NUM_PAGES }, (_, i) => {
+    return Array.from({ length: numPages }, (_, i) => {
       let texturePath: string
       if (i === 0) {
         texturePath = frontCover || "/textures/left-page.jpg"
-      } else if (i === NUM_PAGES - 1) {
+      } else if (i === numPages - 1) {
         texturePath = backCover || "/textures/right-page.jpg"
       } else {
         texturePath = `/textures/page-${i + 1}.jpg`
@@ -225,13 +231,14 @@ const DeskMagazine = ({
       )
 
       const bones: THREE.Bone[] = []
-      for (let j = 0; j <= PAGE_SEGMENTS; j++) {
+      const segW = PAGE_WIDTH / numSegments
+      for (let j = 0; j <= numSegments; j++) {
         const bone = new THREE.Bone()
         bones.push(bone)
         if (j === 0) {
           bone.position.x = 0
         } else {
-          bone.position.x = SEGMENT_WIDTH
+          bone.position.x = segW
         }
         if (j > 0) {
           bones[j - 1].add(bone)
@@ -239,7 +246,7 @@ const DeskMagazine = ({
       }
 
       const skeleton = new THREE.Skeleton(bones)
-      const geometry = createPageGeometry()
+      const geometry = createPageGeometry(numSegments)
 
       const mesh = new THREE.SkinnedMesh(geometry, material)
       mesh.frustumCulled = false
@@ -248,7 +255,7 @@ const DeskMagazine = ({
 
       return { mesh, skeleton }
     })
-  }, [frontCover, backCover, grainTexture])
+  }, [frontCover, backCover, grainTexture, numPages, numSegments])
 
   useEffect(() => {
     if (!groupRef.current) return
@@ -321,13 +328,13 @@ const DeskMagazine = ({
     const flipProgress = 0.02
 
     const pageWindowSize = (idx: number) => {
-      const center = (NUM_PAGES - 1) / 2
+      const center = (numPages - 1) / 2
       const dist = Math.abs(idx - center) / center
       return 1.5 + dist * 2.5
     }
 
     let totalWeight = 0
-    for (let i = 0; i < NUM_PAGES; i++) totalWeight += pageWindowSize(i)
+    for (let i = 0; i < numPages; i++) totalWeight += pageWindowSize(i)
 
     pages.forEach((page, index) => {
       const group = pagesRef.current[index]
@@ -348,7 +355,7 @@ const DeskMagazine = ({
       group.rotation.y = -pageT * Math.PI
 
       const gap = PAGE_DEPTH * 0.5
-      const unflippedZ = (NUM_PAGES - 1 - index) * gap
+      const unflippedZ = (numPages - 1 - index) * gap
       const flippedZ = index * gap
       group.position.z = THREE.MathUtils.lerp(unflippedZ, flippedZ, pageT)
 
@@ -356,8 +363,8 @@ const DeskMagazine = ({
       const midFlip = Math.sin(pageT * Math.PI)
       const bendIntensity = midFlip * 0.05
 
-      for (let i = 0; i < PAGE_SEGMENTS; i++) {
-        const segmentProgress = i / PAGE_SEGMENTS
+      for (let i = 0; i < numSegments; i++) {
+        const segmentProgress = i / numSegments
         const curlY = Math.sin(segmentProgress * Math.PI * 0.7) * bendIntensity
         const droop = segmentProgress * segmentProgress * midFlip * 0.04
         const bendPerBone = dampedBendRef.current * 0.025
@@ -699,16 +706,19 @@ const CameraLockedMagazine = ({
   scrollProgressRef,
   frontCover,
   backCover,
+  lowPower,
 }: {
   scrollProgressRef: React.MutableRefObject<number>
   frontCover?: string
   backCover?: string
+  lowPower?: boolean
 }) => {
   return (
     <DeskMagazine
       scrollProgressRef={scrollProgressRef}
       frontCover={frontCover}
       backCover={backCover}
+      lowPower={lowPower}
     />
   )
 }
@@ -818,10 +828,29 @@ const CameraController = () => {
   return null
 }
 
+const StaticCameraSetup = () => {
+  const { camera } = useThree()
+  useEffect(() => {
+    camera.position.set(...CAMERA_POSITION)
+    camera.lookAt(...CAMERA_TARGET)
+    ;(camera as THREE.PerspectiveCamera).fov = CAMERA_FOV
+    ;(camera as THREE.PerspectiveCamera).updateProjectionMatrix()
+  }, [camera])
+  return null
+}
+
 const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
   const orbitControlsRef = useRef<any>(null)
   const scrollProgressRef = useRef(0)
   const sceneWrapRef = useRef<HTMLDivElement>(null)
+  const [lowPower, setLowPower] = useState(false)
+
+  useEffect(() => {
+    const isMobile =
+      (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0) ||
+      window.innerWidth < 768
+    setLowPower(isMobile)
+  }, [])
 
   useEffect(() => {
     let raf = 0
@@ -865,9 +894,10 @@ const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
   return (
     <div ref={sceneWrapRef} className="w-full h-full bg-transparent">
       <Canvas
-        dpr={[1, 2]}
+        dpr={lowPower ? 1 : [1, 2]}
         gl={{
-          antialias: true,
+          antialias: !lowPower,
+          powerPreference: lowPower ? "low-power" : "high-performance",
           outputColorSpace: THREE.SRGBColorSpace,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.15,
@@ -875,6 +905,7 @@ const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
         }}
         camera={{
           fov: CAMERA_FOV,
+          position: CAMERA_POSITION,
           up: [0, 1, 0],
         }}
         style={{
@@ -959,7 +990,7 @@ const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
           e.preventDefault()
         }}
       >
-        <CameraController />
+        {lowPower ? <StaticCameraSetup /> : <CameraController />}
 
         {/* <OrbitControls
           ref={orbitControlsRef}
@@ -996,6 +1027,7 @@ const DeskScene = ({ frontCover, backCover }: DeskSceneProps) => {
             scrollProgressRef={scrollProgressRef}
             frontCover={frontCover}
             backCover={backCover}
+            lowPower={lowPower}
           />
           <MagazineClouds />
         </Suspense>
