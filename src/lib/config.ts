@@ -7,6 +7,15 @@ const MEDUSA_BACKEND_URL =
   "http://localhost:9000"
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
+if (typeof window === "undefined") {
+  console.log(
+    `[config] MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL} KEY_PREFIX=${PUBLISHABLE_API_KEY.slice(
+      0,
+      12
+    )}...`
+  )
+}
+
 // Create comprehensive localStorage polyfill for SDK
 const createLocalStoragePolyfill = () => {
   const storage = {

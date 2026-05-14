@@ -46,6 +46,9 @@ export const getRegion = async (countryCode: string) => {
     const regions = await listRegions()
 
     if (!regions) {
+      console.error(
+        `[getRegion] listRegions returned null/undefined for countryCode=${countryCode}`
+      )
       return null
     }
 
@@ -59,8 +62,22 @@ export const getRegion = async (countryCode: string) => {
       ? regionMap.get(countryCode)
       : regionMap.get("us")
 
+    if (!region) {
+      console.error(
+        `[getRegion] No region found for countryCode=${countryCode}. Available: ${Array.from(
+          regionMap.keys()
+        )
+          .slice(0, 10)
+          .join(",")}`
+      )
+    }
+
     return region
   } catch (e: any) {
+    console.error(
+      `[getRegion] Error for countryCode=${countryCode}:`,
+      e?.message || e
+    )
     return null
   }
 }
