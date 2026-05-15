@@ -7,14 +7,15 @@ import {
   useEffect,
   ReactNode,
 } from "react"
+import { sdk } from "@lib/config"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type RolloutStatus =
   | "NOT_REVEALED" // announcement_date is in the future (or not set)
-  | "ANNOUNCED"    // announced but drop_date is still in the future
-  | "DROPPED"      // drop_date has passed, not sold out yet
-  | "SOLDOUT"      // sold_out_date has passed
+  | "ANNOUNCED" // announced but drop_date is still in the future
+  | "DROPPED" // drop_date has passed, not sold out yet
+  | "SOLDOUT" // sold_out_date has passed
 
 export interface ActiveRollout {
   id: string
@@ -80,12 +81,12 @@ export function RolloutProvider({ children }: { children: ReactNode }) {
 
     const load = async () => {
       try {
-        const res = await fetch("/store/rollouts", {
-          credentials: "include",
+        const response = await sdk.client.fetch("/store/rollouts", {
+          method: "GET",
         })
-        if (!res.ok) return
+        if (!response) return
 
-        const { rollouts } = await res.json()
+        const { rollouts } = response as any
         if (cancelled) return
 
         const now = Date.now()
@@ -110,7 +111,9 @@ export function RolloutProvider({ children }: { children: ReactNode }) {
     }
 
     load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return (

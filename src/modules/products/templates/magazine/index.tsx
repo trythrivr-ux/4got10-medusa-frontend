@@ -3,6 +3,7 @@ import React from "react"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 import { getActiveRollouts } from "@lib/data/rollouts"
+import { getProductFeatures } from "@lib/data/features"
 import { listCategories } from "@lib/data/categories"
 import { getProductPrice } from "@lib/util/get-product-price"
 import SimpleDeskScene from "@modules/desk/components/simple-desk-scene"
@@ -10,6 +11,8 @@ import MagazineProductActions from "../magazine-product-actions"
 import { Button, Divider, Typography } from "@/components/ui"
 import AnimatedRow from "@modules/products/components/animated-row"
 import PaginatedProducts from "@modules/store/templates/paginated-products"
+import ProductOnboardingCta from "../../components/product-onboarding-cta"
+import FrequentlyAskedRow from "@modules/products/components/frequently-asked-row"
 
 type MagazineProductTemplateProps = {
   product: HttpTypes.StoreProduct
@@ -46,6 +49,9 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
     (rollout: any) =>
       rollout.product_ids && rollout.product_ids.includes(product.id)
   )
+
+  const featuresData = await getProductFeatures(product.id)
+  const features = (featuresData as any)?.features || []
 
   if (productRollout && productRollout.announcement_date) {
     const announcementDate = new Date(productRollout.announcement_date)
@@ -225,43 +231,206 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
               )}
             </div>
           </div>
+          <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] h-fit">
+            <Typography className="opacity-[55%] py-[2px]" variant="subtitle1">
+              Description
+            </Typography>
+            <Divider orientation="horizontal" />
 
+            <div className="flex flex-col gap-[4px] py-[2px]">
+              {product.description
+                ?.split("\n")
+                .map((line: string, index: number) => {
+                  const isBullet = line.trim().startsWith("-")
+                  return (
+                    <Typography
+                      key={index}
+                      className="opacity-[55%]"
+                      variant="body"
+                    >
+                      {isBullet && <span className="mr-1">•</span>}
+                      {isBullet ? line.trim().substring(1).trim() : line}
+                    </Typography>
+                  )
+                })}
+            </div>
+          </div>
           <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] h-fit">
             <Typography className="opacity-[55%] py-[2px]" variant="subtitle1">
               This Release
             </Typography>
             <div className="flex flex-col gap-[8px] w-full">
-              <div className="h-[163px] flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full">
-                <div className="flex flex-row w-full h-fit">
-                  <Typography variant="subtitle2">Black</Typography>
+              <div
+                className={`h-[220px] flex rounded-[7px] p-[12px] flex-col justify-end w-full bg-cover bg-center ${
+                  productRollout?.headliner_media_urls?.[0]
+                    ? ""
+                    : "bg-[#F7F7F7]"
+                }`}
+                style={{
+                  backgroundImage: productRollout?.headliner_media_urls?.[0]
+                    ? `url(${productRollout.headliner_media_urls[0]})`
+                    : undefined,
+                }}
+              >
+                <div className="flex flex-col w-full h-fit">
+                  <Typography
+                    className="text-white pb-[4px] opacity-[75%]"
+                    variant="subtitle2"
+                  >
+                    Headliner
+                  </Typography>
+                  <Typography className="text-white" variant="subtitle1">
+                    {productRollout.headliner || "No headliner"}
+                  </Typography>
                 </div>
               </div>
-              <div className="h-[163px] flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full">
-                <div className="flex flex-row w-full h-fit">
-                  <Typography variant="subtitle2">Black</Typography>
+              <div className="h-[220px] relative flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-[170px] h-[170px]">
+                    {features[0] && (
+                      <div className="absolute top-1/2 left-1/2 w-[64px] h-[64px] -translate-x-1/2 -translate-y-1/2">
+                        <div
+                          className="w-full h-full rounded-full overflow-hidden bg-cover bg-center bg-[#E5E5E5] border border-white shadow-sm"
+                          style={{
+                            backgroundImage: features[0].photo_file_id
+                              ? `url(${
+                                  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+                                  "http://localhost:9000"
+                                }/files/${features[0].photo_file_id})`
+                              : undefined,
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {features.slice(1).map((feature: any, index: number) => {
+                      const total = features.slice(1).length
+                      const angle = (360 / total) * index
+                      const radius = 58
+
+                      return (
+                        <div
+                          key={feature.id}
+                          className="absolute top-1/2 left-1/2 w-[52px] h-[52px] -translate-x-1/2 -translate-y-1/2"
+                          style={{
+                            transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px)`,
+                          }}
+                        >
+                          <div
+                            className="w-full h-full rounded-full overflow-hidden bg-cover bg-center bg-[#E5E5E5] border border-white shadow-sm"
+                            style={{
+                              backgroundImage: feature.photo_file_id
+                                ? `url(${
+                                    process.env
+                                      .NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+                                    "http://localhost:9000"
+                                  }/files/${feature.photo_file_id})`
+                                : undefined,
+                            }}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-              <div className="h-[163px] flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full">
-                <div className="flex flex-row w-full h-fit">
-                  <Typography variant="subtitle2">Black</Typography>
-                </div>
+
+                <Typography
+                  className="text-black absolute bottom-[12px] left-[12px]"
+                  variant="subtitle2"
+                >
+                  Features
+                </Typography>
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] h-fit">
-            <Typography className="opacity-[55%] py-[2px]" variant="subtitle1">
-              Frequently Asked
-            </Typography>
-          </div>
-          <Button variant="backdrop" className="w-fit" size="small">
+          <Button variant="backdrop" className="flex w-fit" size="small">
             Production
           </Button>
-          <div className="grid grid-cols-2 gap-[12px] w-full aspect-square">
-            <div className="bg-white rounded-[10px] px-[12px] py-[15px] w-full aspect-square"></div>
-            <div className="bg-white rounded-[10px] px-[12px] py-[15px] w-full aspect-square"></div>
-            <div className="bg-white rounded-[10px] px-[12px] py-[15px] w-full aspect-square"></div>
-            <div className="bg-white rounded-[10px] px-[12px] py-[15px] w-full aspect-square"></div>
+          <div className="grid grid-cols-2 gap-[12px]  w-full aspect-square">
+            <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
+              <Typography
+                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                variant="subtitle2"
+              >
+                Printed on premium photo paper
+              </Typography>
+              <Typography
+                className="opacity-[55%] text-[11.4px] pb-[4px]"
+                variant="subtitle1"
+              >
+                Heavyweight, acid-free photo paper ensures sharp, durable prints
+                with professional quality
+              </Typography>
+              <img
+                src="/production/image-1.jpg"
+                alt="Production 1"
+                className="bg-white rounded-[7px] w-full aspect-square object-cover"
+              />
+            </div>
+            <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
+              <Typography
+                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                variant="subtitle2"
+              >
+                Premium Matte Finish
+              </Typography>
+              <Typography
+                className="opacity-[55%] text-[11.4px] pb-[4px]"
+                variant="subtitle1"
+              >
+                Non-reflective matte coating reduces glare while adding a soft,
+                premium feel
+              </Typography>
+              <img
+                src="/production/image-2.jpg"
+                alt="Production 1"
+                className="bg-white rounded-[7px] w-full aspect-square object-cover"
+              />
+            </div>
+            <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
+              <Typography
+                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                variant="subtitle2"
+              >
+                Maximum color brilliance
+              </Typography>
+              <Typography
+                className="opacity-[55%] text-[11.4px] pb-[4px]"
+                variant="subtitle1"
+              >
+                High saturation inks produce vivid, true-to-life colors that
+                stand out in any light
+              </Typography>
+              <img
+                src="/production/image-3.jpg"
+                alt="Production 1"
+                className="bg-white rounded-[7px] w-full aspect-square object-cover"
+              />
+            </div>
+
+            <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
+              <Typography
+                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                variant="subtitle2"
+              >
+                High UV resistance
+              </Typography>
+              <Typography
+                className="opacity-[55%] text-[11.4px] pb-[4px]"
+                variant="subtitle1"
+              >
+                UV-resistant coating prevents fading, keeping colors vibrant for
+                years
+              </Typography>
+              <img
+                src="/production/image-4.jpg"
+                alt="Production 1"
+                className="bg-white rounded-[7px] w-full aspect-square object-cover"
+              />
+            </div>
           </div>
+
+          <FrequentlyAskedRow />
         </div>
       </div>
       <div className="flex flex-col w-full px-[12px] pb-[24px] gap-[12px]">

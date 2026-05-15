@@ -565,6 +565,37 @@ export async function placeOrder(cartId?: string) {
     .catch(medusaError)
 
   if (cartRes?.type === "order") {
+    // Capture any authorized payments so the order is marked as paid
+    try {
+      if (
+        cartRes.order.payment_collections &&
+        cartRes.order.payment_collections.length > 0
+      ) {
+        const paymentCollectionId = cartRes.order.payment_collections[0].id
+
+        // Fetch payments for this collection
+        const paymentsRes = await sdk.client.fetch<{ payments: any[] }>(
+          `/store/payment-collections/${paymentCollectionId}/payments`,
+          { headers }
+        )
+
+        if (paymentsRes?.payments) {
+          for (const payment of paymentsRes.payments) {
+            if (!payment.captured_at) {
+              // Capture the payment
+              await sdk.client.fetch(`/store/payments/${payment.id}/capture`, {
+                method: "POST",
+                headers,
+              })
+              console.log(`Payment captured: ${payment.id}`)
+            }
+          }
+        }
+      }
+    } catch (capErr) {
+      console.warn("Payment capture skipped:", (capErr as any)?.message)
+    }
+
     const countryCode =
       cartRes.order.shipping_address?.country_code?.toLowerCase()
 

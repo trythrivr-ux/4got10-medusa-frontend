@@ -22,7 +22,7 @@ const Typography = React.forwardRef<
       subtitle1: "text-[12px] tracking-[2.5%] font-normal font-plus-jakarta",
       subtitle2:
         "text-[10.5px] inline-flex items-center h-[10px] tracking-[2%] font-light uppercase font-inklination-light",
-      body: "text-[9.5px] tracking-[1%] font-normal font-inklination-regular",
+      body: "text-[11.7px] tracking-[1.5%] leading-[150%] font-normal font-inklination-regular",
     }
 
     const Tag = variant === "title" ? "h1" : "p"
