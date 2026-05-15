@@ -30,13 +30,11 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
     return notFound()
   }
 
-  // Get Magazines category
   const categories = await listCategories().catch(() => [])
   const magazinesCategory = categories.find((cat) =>
     cat.handle?.toLowerCase().includes("magazine")
   )
 
-  // Get product price
   const { cheapestPrice } = getProductPrice({
     product,
   })
@@ -52,6 +50,10 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
 
   const featuresData = await getProductFeatures(product.id)
   const features = (featuresData as any)?.features || []
+
+  const hasDescription = Boolean(product.description?.trim())
+  const hasHeadliner = Boolean(productRollout?.headliner?.trim())
+  const hasFeatures = features.length > 0
 
   if (productRollout && productRollout.announcement_date) {
     const announcementDate = new Date(productRollout.announcement_date)
@@ -84,7 +86,6 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
   return (
     <div className="w-full relative">
       <div className="flex flex-col w-full items-start phone:flex-row">
-        {/* 2/3 sticky parent */}
         <div className="w-full phone:w-[66.666%] flex flex-row items-end justify-end h-[85vh] phone:h-[calc(100vh-20px)] phone:sticky phone:top-0">
           <div className="h-full w-full rounded-[48px] overflow-hidden">
             <div
@@ -124,7 +125,6 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
           </div>
         </div>
 
-        {/* Mobile add to cart wrapper - only visible on mobile */}
         <div className="block phone:hidden w-full px-[12px]">
           <div className="flex flex-row gap-[10px] bg-[#F9F9F980] h-[62px] p-[8px] rounded-[12px]">
             <MagazineProductActions
@@ -144,13 +144,13 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
           </div>
         </div>
 
-        {/* 1/3 normal scrolling column */}
         <div className="w-full phone:w-[33.333%] relative pt-[12px] phone:pt-[75px] flex flex-col gap-[10px] p-[12px] z-10">
           <Button variant="backdrop" className="w-fit" size="small">
             <Typography className="opacity-[55%]" variant="subtitle2">
               Overview
             </Typography>
           </Button>
+
           <div
             className={`flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] ${
               product.variants && product.variants.length > 1
@@ -204,7 +204,9 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
                   </div>
                 </div>
               </div>
+
               <Divider orientation="horizontal" />
+
               {product.variants && product.variants.length > 1 && (
                 <div className="w-full h-fit justify-start items-start gap-[15px] flex flex-col">
                   <Typography
@@ -231,125 +233,148 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
               )}
             </div>
           </div>
-          <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] h-fit">
-            <Typography className="opacity-[55%] py-[2px]" variant="subtitle1">
-              Description
-            </Typography>
-            <Divider orientation="horizontal" />
 
-            <div className="flex flex-col gap-[4px] py-[2px]">
-              {product.description
-                ?.split("\n")
-                .map((line: string, index: number) => {
-                  const isBullet = line.trim().startsWith("-")
-                  return (
-                    <Typography
-                      key={index}
-                      className="opacity-[55%]"
-                      variant="body"
-                    >
-                      {isBullet && <span className="mr-1">•</span>}
-                      {isBullet ? line.trim().substring(1).trim() : line}
-                    </Typography>
-                  )
-                })}
-            </div>
-          </div>
-          <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] h-fit">
-            <Typography className="opacity-[55%] py-[2px]" variant="subtitle1">
-              This Release
-            </Typography>
-            <div className="flex flex-col gap-[8px] w-full">
-              <div
-                className={`h-[220px] flex rounded-[7px] p-[12px] flex-col justify-end w-full bg-cover bg-center ${
-                  productRollout?.headliner_media_urls?.[0]
-                    ? ""
-                    : "bg-[#F7F7F7]"
-                }`}
-                style={{
-                  backgroundImage: productRollout?.headliner_media_urls?.[0]
-                    ? `url(${productRollout.headliner_media_urls[0]})`
-                    : undefined,
-                }}
+          {hasDescription && (
+            <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] h-fit">
+              <Typography
+                className="opacity-[55%] py-[2px]"
+                variant="subtitle1"
               >
-                <div className="flex flex-col w-full h-fit">
-                  <Typography
-                    className="text-white pb-[4px] opacity-[75%]"
-                    variant="subtitle2"
-                  >
-                    Headliner
-                  </Typography>
-                  <Typography className="text-white" variant="subtitle1">
-                    {productRollout.headliner || "No headliner"}
-                  </Typography>
-                </div>
-              </div>
-              <div className="h-[220px] relative flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-[170px] h-[170px]">
-                    {features[0] && (
-                      <div className="absolute top-1/2 left-1/2 w-[64px] h-[64px] -translate-x-1/2 -translate-y-1/2">
-                        <div
-                          className="w-full h-full rounded-full overflow-hidden bg-cover bg-center bg-[#E5E5E5] border border-white shadow-sm"
-                          style={{
-                            backgroundImage: features[0].photo_file_id
-                              ? `url(${
-                                  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
-                                  "http://localhost:9000"
-                                }/files/${features[0].photo_file_id})`
-                              : undefined,
-                          }}
-                        />
-                      </div>
-                    )}
+                Description
+              </Typography>
+              <Divider orientation="horizontal" />
 
-                    {features.slice(1).map((feature: any, index: number) => {
-                      const total = features.slice(1).length
-                      const angle = (360 / total) * index
-                      const radius = 58
-
-                      return (
-                        <div
-                          key={feature.id}
-                          className="absolute top-1/2 left-1/2 w-[52px] h-[52px] -translate-x-1/2 -translate-y-1/2"
-                          style={{
-                            transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px)`,
-                          }}
-                        >
-                          <div
-                            className="w-full h-full rounded-full overflow-hidden bg-cover bg-center bg-[#E5E5E5] border border-white shadow-sm"
-                            style={{
-                              backgroundImage: feature.photo_file_id
-                                ? `url(${
-                                    process.env
-                                      .NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
-                                    "http://localhost:9000"
-                                  }/files/${feature.photo_file_id})`
-                                : undefined,
-                            }}
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <Typography
-                  className="text-black absolute bottom-[12px] left-[12px]"
-                  variant="subtitle2"
-                >
-                  Features
-                </Typography>
+              <div className="flex flex-col gap-[4px] py-[2px]">
+                {product.description
+                  ?.split("\n")
+                  .map((line: string, index: number) => {
+                    const isBullet = line.trim().startsWith("-")
+                    return (
+                      <Typography
+                        key={index}
+                        className="opacity-[55%]"
+                        variant="body"
+                      >
+                        {isBullet && <span className="mr-1">•</span>}
+                        {isBullet ? line.trim().substring(1).trim() : line}
+                      </Typography>
+                    )
+                  })}
               </div>
             </div>
-          </div>
+          )}
+
+          {(hasHeadliner || hasFeatures) && (
+            <div className="flex flex-col gap-[10px] bg-white rounded-[10px] px-[11.5px] py-[12px] h-fit">
+              <Typography
+                className="opacity-[55%] py-[2px]"
+                variant="subtitle1"
+              >
+                This Release
+              </Typography>
+
+              <div className="flex flex-col gap-[8px] w-full">
+                {hasHeadliner && (
+                  <div
+                    className={`h-[220px] flex rounded-[7px] p-[12px] flex-col justify-end w-full bg-cover bg-center ${
+                      productRollout?.headliner_media_urls?.[0]
+                        ? ""
+                        : "bg-[#F7F7F7]"
+                    }`}
+                    style={{
+                      backgroundImage: productRollout?.headliner_media_urls?.[0]
+                        ? `url(${productRollout.headliner_media_urls[0]})`
+                        : undefined,
+                    }}
+                  >
+                    <div className="flex flex-col w-full h-fit">
+                      <Typography
+                        className="text-white pb-[4px] opacity-[75%]"
+                        variant="subtitle2"
+                      >
+                        Headliner
+                      </Typography>
+                      <Typography className="text-white" variant="subtitle1">
+                        {productRollout.headliner}
+                      </Typography>
+                    </div>
+                  </div>
+                )}
+
+                {hasFeatures && (
+                  <div className="h-[220px] relative flex rounded-[7px] p-[12px] bg-[#F7F7F7] flex-col justify-end w-full overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative w-[170px] h-[170px]">
+                        {features[0] && (
+                          <div className="absolute top-1/2 left-1/2 w-[64px] h-[64px] -translate-x-1/2 -translate-y-1/2">
+                            <div
+                              className="w-full h-full rounded-full overflow-hidden bg-cover bg-center bg-[#E5E5E5] border border-white shadow-sm"
+                              style={{
+                                backgroundImage: features[0].photo_file_id
+                                  ? `url(${
+                                      process.env
+                                        .NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+                                      "http://localhost:9000"
+                                    }/files/${features[0].photo_file_id})`
+                                  : undefined,
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {features
+                          .slice(1)
+                          .map((feature: any, index: number) => {
+                            const total = features.slice(1).length
+                            const angle = (360 / total) * index
+                            const radius = 58
+
+                            return (
+                              <div
+                                key={feature.id}
+                                className="absolute top-1/2 left-1/2 w-[52px] h-[52px] -translate-x-1/2 -translate-y-1/2"
+                                style={{
+                                  transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}px)`,
+                                }}
+                              >
+                                <div
+                                  className="w-full h-full rounded-full overflow-hidden bg-cover bg-center bg-[#E5E5E5] border border-white shadow-sm"
+                                  style={{
+                                    backgroundImage: feature.photo_file_id
+                                      ? `url(${
+                                          process.env
+                                            .NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
+                                          "http://localhost:9000"
+                                        }/files/${feature.photo_file_id})`
+                                      : undefined,
+                                  }}
+                                />
+                              </div>
+                            )
+                          })}
+                      </div>
+                    </div>
+
+                    <Typography
+                      className="text-black absolute bottom-[12px] left-[12px]"
+                      variant="subtitle2"
+                    >
+                      Features
+                    </Typography>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <Button variant="backdrop" className="flex w-fit" size="small">
             Production
           </Button>
+
           <div className="grid grid-cols-2 gap-[12px]  w-full aspect-square">
             <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
               <Typography
-                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                className="text-black text-[12px] leading-[100%] w-full tracking-[-1.5%] h-fit  pt-[4px] pb-[4px] opacity-[100%]"
                 variant="subtitle2"
               >
                 Printed on premium photo paper
@@ -369,7 +394,7 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
             </div>
             <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
               <Typography
-                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                className="text-black text-[12px] leading-[100%] w-full tracking-[-1.5%] h-fit  pt-[4px] pb-[4px] opacity-[100%]"
                 variant="subtitle2"
               >
                 Premium Matte Finish
@@ -389,7 +414,7 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
             </div>
             <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
               <Typography
-                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                className="text-black text-[12px] leading-[100%] w-full tracking-[-1.5%] h-fit  pt-[4px] pb-[4px] opacity-[100%]"
                 variant="subtitle2"
               >
                 Maximum color brilliance
@@ -410,7 +435,7 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
 
             <div className="bg-white rounded-[10px] gap-[10px] flex flex-col p-[11px] w-full aspect-square">
               <Typography
-                className="text-black text-[12px] tracking-[-1.5%]  pt-[6px] pb-[6px] opacity-[100%]"
+                className="text-black text-[12px] leading-[100%] w-full tracking-[-1.5%] h-fit  pt-[4px] pb-[4px] opacity-[100%]"
                 variant="subtitle2"
               >
                 High UV resistance
@@ -433,6 +458,7 @@ const MagazineProductTemplate: React.FC<MagazineProductTemplateProps> = async ({
           <FrequentlyAskedRow />
         </div>
       </div>
+
       <div className="flex flex-col w-full px-[12px] pb-[24px] gap-[12px]">
         <PaginatedProducts
           sortBy="created_at"
