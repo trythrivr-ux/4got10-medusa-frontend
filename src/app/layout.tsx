@@ -19,6 +19,12 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
   title: {
     default: "4got10 Magazine",
     template: "%s | 4got10 Magazine",

@@ -3,6 +3,26 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Safari mobile horizontal scroll fix */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Safari-specific overflow handling */
+@supports (-webkit-touch-callout: none) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+}
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
