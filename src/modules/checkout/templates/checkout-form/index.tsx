@@ -25,20 +25,20 @@ export default async function CheckoutForm({
   }
 
   return (
-    <div className="w-full grid grid-cols-1 gap-y-[7px]">
-      <div className="rounded-[10px] bg-white p-[12px] py-[14px]">
+    <div className="w-full min-w-0 grid grid-cols-1 gap-y-[7px]">
+      <div className="rounded-[10px] bg-white p-[12px] py-[14px] min-w-0">
         <Addresses cart={cart} customer={customer} />
       </div>
 
-      <div className="rounded-[10px] bg-white p-[12px] py-[14px]">
+      <div className="rounded-[10px] bg-white p-[12px] py-[14px] min-w-0">
         <Shipping cart={cart} availableShippingMethods={shippingMethods} />
       </div>
 
-      <div className="rounded-[10px] bg-white p-[12px] py-[14px]">
+      <div className="rounded-[10px] bg-white p-[12px] py-[14px] min-w-0">
         <Payment cart={cart} availablePaymentMethods={paymentMethods} />
       </div>
 
-      <div className="rounded-[10px] bg-white p-[12px] py-[14px]">
+      <div className="rounded-[10px] bg-white p-[12px] py-[14px] min-w-0">
         <Review cart={cart} />
       </div>
     </div>
