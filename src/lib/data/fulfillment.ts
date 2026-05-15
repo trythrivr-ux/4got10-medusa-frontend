@@ -2,6 +2,7 @@
 
 import { sdk } from "@lib/config"
 import { getAuthHeaders, getCacheOptions } from "./cookies"
+import { HttpTypes } from "@medusajs/types"
 
 export const listCartShippingMethods = async (cartId: string) => {
   const headers = {
@@ -22,7 +23,6 @@ export const listCartShippingMethods = async (cartId: string) => {
         },
         headers,
         next,
-        cache: "force-cache",
       }
     )
     .then(({ shipping_options }) => shipping_options)

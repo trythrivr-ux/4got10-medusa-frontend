@@ -12,10 +12,10 @@ const CartTemplate = ({
 }) => {
   return (
     <div className="min-h-screen bg-[#EFEFEF] flex items-start justify-center w-full px-[10px] pt-[85px]">
-      <div className="flex min-h-[700px] w-full phone:w-fit rounded-[10px] bg-[#D8D8D8] flex-row gap-[12px] p-[7px]">
-        <div className=" w-full max-w-[1280px]" data-testid="cart-container">
+      <div className="flex min-h-[700px] w-full max-w-[1280px] rounded-[10px] bg-[#D8D8D8] flex-row gap-[12px] p-[7px]">
+        <div className="w-full" data-testid="cart-container">
           {cart?.items?.length ? (
-            <div className="grid grid-cols-1 h-full gap-[7px] phone:min-w-[1200px] small:grid-cols-[1fr_360px]">
+            <div className="grid grid-cols-1 h-full gap-[7px] laptop:grid-cols-[1fr_360px]">
               <CartCard cart={cart} />
               {cart.region && <CartSummaryCard cart={cart as any} />}
             </div>

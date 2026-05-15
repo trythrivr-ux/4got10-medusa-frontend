@@ -175,34 +175,42 @@ const CartCard = ({ cart }: CartCardProps) => {
                   >
                     Remove
                   </Pill>
-                  <Pill
-                    onClick={() => handleQuantity(item.id, item.quantity - 1)}
-                    disabled={isPending}
-                  >
-                    <div className="h-[10px] flex items-center justify-center">
+                  <div className="bg-[#EFEFEF] tracking-[0px] flex gap-[6px] flex-row items-center justify-center rounded-full px-[11px] h-[24px]">
+                    <button
+                      onClick={() => handleQuantity(item.id, item.quantity - 1)}
+                      disabled={isPending}
+                      className="rounded-[4px] mr-[2px] w-[10px] h-[10px] items-center flex justify-center text-[14px]"
+                    >
                       <Image
                         alt=""
                         src="/icons/minus.svg"
-                        width={10}
-                        height={10}
-                        className="w-[6px] h-[6px]"
+                        className="w-[8px] opacity-[50%]"
+                        height={50}
+                        width={50}
                       />
-                    </div>
-                  </Pill>
-                  <Pill
-                    onClick={() => handleQuantity(item.id, item.quantity + 1)}
-                    disabled={isPending}
-                  >
-                    <div className="h-[10px] flex items-center justify-center">
+                    </button>
+                    <p
+                      className="text-[10.5px] font-medium"
+                      style={{
+                        fontFamily: "Plus Jakarta Sans, sans-serif",
+                      }}
+                    >
+                      {item.quantity}
+                    </p>
+                    <button
+                      onClick={() => handleQuantity(item.id, item.quantity + 1)}
+                      disabled={isPending}
+                      className="rounded-[4px] w-[10px] h-[10px] items-center flex justify-center text-[14px]"
+                    >
                       <Image
                         alt=""
                         src="/icons/plus.svg"
-                        width={10}
-                        height={10}
-                        className="w-[6px] h-[6px]"
+                        className="w-[8.5px] opacity-[50%]"
+                        height={50}
+                        width={50}
                       />
-                    </div>
-                  </Pill>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
