@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useRef,
 } from "react"
 import { sdk } from "@lib/config"
 
@@ -75,9 +76,12 @@ export function RolloutProvider({ children }: { children: ReactNode }) {
   const [rollout, setRollout] = useState<ActiveRollout | null>(null)
   const [status, setStatus] = useState<RolloutStatus | null>(null)
   const [loading, setLoading] = useState(true)
+  const rolloutRef = useRef<ActiveRollout | null>(null)
+  const statusRef = useRef<RolloutStatus | null>(null)
 
   useEffect(() => {
     let cancelled = false
+    let interval: NodeJS.Timeout | null = null
 
     const load = async () => {
       try {
@@ -101,9 +105,14 @@ export function RolloutProvider({ children }: { children: ReactNode }) {
 
         const active = announced ?? null
 
+        console.log("Rollout context loaded:", active)
         setRollout(active)
-        setStatus(active ? deriveStatus(active) : null)
-      } catch {
+        rolloutRef.current = active
+        const initialStatus = active ? deriveStatus(active) : null
+        setStatus(initialStatus)
+        statusRef.current = initialStatus
+      } catch (error) {
+        console.error("Error loading rollouts:", error)
         // network error — leave loading=false, rollout=null
       } finally {
         if (!cancelled) setLoading(false)
@@ -111,8 +120,36 @@ export function RolloutProvider({ children }: { children: ReactNode }) {
     }
 
     load()
+
+    // Poll every 5 seconds to update status as time passes
+    interval = setInterval(() => {
+      if (rolloutRef.current) {
+        const newStatus = deriveStatus(rolloutRef.current)
+        const now = Date.now()
+        const dropTime = rolloutRef.current.drop_date
+          ? new Date(rolloutRef.current.drop_date).getTime()
+          : null
+        const timeUntil = dropTime ? dropTime - now : null
+        console.log(
+          "Rollout status check:",
+          newStatus,
+          "at",
+          new Date().toISOString(),
+          "timeUntilDrop:",
+          timeUntil,
+          "ms",
+          "prev status:",
+          statusRef.current
+        )
+        console.log("Setting status to", newStatus)
+        setStatus(newStatus)
+        statusRef.current = newStatus
+      }
+    }, 5000)
+
     return () => {
       cancelled = true
+      if (interval) clearInterval(interval)
     }
   }, [])
 

@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect } from "react"
 import FourGotTenMenu from "@/modules/layout/components/4got10-menu"
 import { listRegions } from "@lib/data/regions"
-import { getActiveRollouts } from "@lib/data/rollouts"
 import { HttpTypes } from "@medusajs/types"
 import CountdownTimer from "@/modules/products/components/countdown-timer"
 import Image from "next/image"
@@ -11,12 +10,16 @@ import gsap from "gsap"
 import DeskScene from "@/modules/desk/components/desk-scene"
 import SimpleDeskScene from "@modules/desk/components/simple-desk-scene"
 import { Button, Typography } from "@/components/ui"
+import { useRollout } from "@/context/rollout-context"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function HomePage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [regions, setRegions] = useState<HttpTypes.StoreRegion[]>([])
-  const [activeRollout, setActiveRollout] = useState<any>(null)
+  const { rollout, status, loading: rolloutLoading } = useRollout()
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+  const [isDropped, setIsDropped] = useState(false)
   const edgeFadeMask =
     "radial-gradient(circle at 50% 50%, black 40%, transparent 72%)"
   const oImageRef = useRef<HTMLDivElement>(null)
@@ -26,6 +29,11 @@ export default function HomePage() {
   const leftRowRef = useRef<HTMLDivElement>(null)
   const rightRowRef = useRef<HTMLDivElement>(null)
   const [itemsPerSide] = useState(3)
+  const prototypeImageRef = useRef<HTMLDivElement>(null)
+  const newImageRef = useRef<HTMLDivElement>(null)
+  const releaseButtonRef = useRef<HTMLDivElement>(null)
+  const buyButtonRef = useRef<HTMLDivElement>(null)
+  const volumeInfoRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const leftRow = leftRowRef.current
@@ -281,28 +289,110 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    getActiveRollouts().then((data: any) => {
-      console.log("Rollouts data:", data)
-      const rollouts = data.rollouts || []
-      console.log("Number of rollouts:", rollouts.length)
-      // Find the first active rollout with a future drop date
-      const now = new Date()
-      const active = rollouts.find((r: any) => {
-        const dropDate = new Date(r.drop_date)
-        console.log(
-          "Rollout:",
-          r,
-          "Drop date:",
-          dropDate,
-          "Is future:",
-          dropDate > now
-        )
-        return dropDate > now
-      })
-      console.log("Active rollout:", active)
-      setActiveRollout(active || null)
-    })
-  }, [])
+    console.log(
+      "Animation useEffect - rollout:",
+      rollout,
+      "isDropped:",
+      isDropped
+    )
+    if (!rollout || !rollout.drop_date) return
+
+    const checkDrop = () => {
+      const now = Date.now()
+      const dropTime = rollout.drop_date
+        ? new Date(rollout.drop_date).getTime()
+        : null
+      if (!dropTime) return
+      const timeUntil = dropTime - now
+      console.log(
+        "checkDrop - now:",
+        now,
+        "dropTime:",
+        dropTime,
+        "timeUntil:",
+        timeUntil
+      )
+
+      if (now >= dropTime && !isDropped) {
+        console.log("Drop detected, delaying animations by 3 seconds...")
+        setIsDropped(true)
+
+        // Delay animations by 3 seconds to let the page load
+        setTimeout(() => {
+          console.log("Triggering animations!")
+          const tl = gsap.timeline()
+
+          // Animate prototype image from h-full to h-0
+          if (prototypeImageRef.current) {
+            tl.to(prototypeImageRef.current, {
+              height: "0px",
+              duration: 0.5,
+              ease: "power2.inOut",
+            })
+          }
+
+          // Animate new image from h-0 to h-full
+          if (newImageRef.current) {
+            tl.fromTo(
+              newImageRef.current,
+              { height: "0px" },
+              { height: "100%", duration: 0.5, ease: "power2.inOut" },
+              "<"
+            )
+          }
+
+          // Animate release button from current width to 0
+          if (releaseButtonRef.current) {
+            tl.to(
+              releaseButtonRef.current,
+              {
+                width: "0px",
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.inOut",
+              },
+              "<"
+            )
+          }
+
+          // Animate volume info from 0 width to full
+          if (volumeInfoRef.current) {
+            tl.fromTo(
+              volumeInfoRef.current,
+              { width: "0px", opacity: 0 },
+              {
+                width: "100%",
+                opacity: 1,
+                duration: 0.3,
+                ease: "power2.inOut",
+              },
+              "<0.1"
+            )
+          }
+
+          // Animate buy button from 0 width to full
+          if (buyButtonRef.current) {
+            tl.fromTo(
+              buyButtonRef.current,
+              { width: "0px", opacity: 0 },
+              {
+                width: "100%",
+                opacity: 1,
+                duration: 0.3,
+                ease: "power2.inOut",
+              },
+              "<0.1"
+            )
+          }
+        }, 3000)
+      }
+    }
+
+    checkDrop()
+    const interval = setInterval(checkDrop, 1000)
+
+    return () => clearInterval(interval)
+  }, [rollout, isDropped])
 
   useEffect(() => {
     if (!oImageRef.current || !gImageRef.current) {
@@ -389,14 +479,27 @@ export default function HomePage() {
   return (
     <div
       ref={scrollContainerRef}
-      className="h-h-[calc(100vh-12px)] w-full max-w-screen  bg-white overflow-hidden snap-y snap-mandatory no-scrollbar"
+      className="h-[calc(100vh-12px)] w-full max-w-screen  bg-white overflow-hidden snap-y snap-mandatory no-scrollbar"
     >
-      <Image
-        src="/prototype/image-4.jpg"
-        alt=""
-        fill
-        className="object-cover"
-      />
+      <div
+        ref={prototypeImageRef}
+        className="absolute inset-0 h-full overflow-hidden"
+      >
+        <Image
+          src="/prototype/image-4.jpg"
+          alt=""
+          fill
+          className="object-cover"
+        />
+      </div>
+      <div ref={newImageRef} className="absolute inset-0 h-0 overflow-hidden">
+        <Image
+          src="/production/image-7.jpg"
+          alt=""
+          fill
+          className="object-cover"
+        />
+      </div>
       <div className="absolute p-[12px] bottom-0 flex flex-row justify-between left-0 right-0 w-full h-fit">
         <Image
           src="/menu-icons/4got10-3/frame1.svg"
@@ -413,203 +516,52 @@ export default function HomePage() {
           className="w-[150px] phone:w-[280px]"
         />
       </div>
-      {activeRollout && activeRollout.drop_date && (
+      {rollout && rollout.drop_date && (
         <div className="absolute top-1/2 left-1/2 w-full px-[12px] -translate-x-1/2 -translate-y-1/2 z-10">
-          <Button
-            className="px-[16px] justify-between w-full bg-[#ffffff55]"
-            size="small"
+          <div ref={releaseButtonRef} className="overflow-hidden">
+            <Button
+              className="px-[16px] justify-between w-full bg-[#ffffff55]"
+              size="small"
+            >
+              <Typography className="text-[12px]" variant="body">
+                Releasing
+              </Typography>
+              <Typography className="text-[12px]" variant="body">
+                May
+              </Typography>
+              <Typography className="text-[12px]" variant="body">
+                16th
+              </Typography>
+            </Button>
+          </div>
+          <div
+            ref={volumeInfoRef}
+            className="justify-between pb-[10px] flex-row flex w-0 overflow-hidden"
           >
-            <Typography className="text-[12px]" variant="body">
-              Releasing
+            <Typography className="text-[22px] text-white " variant="title">
+              VOL 12*
             </Typography>
-            <Typography className="text-[12px]" variant="body">
-              May
+
+            <Typography className="text-[22px] text-white " variant="title">
+              2026
             </Typography>
-            <Typography className="text-[12px]" variant="body">
-              16th
-            </Typography>
-          </Button>
+          </div>
+          <div ref={buyButtonRef} className="overflow-hidden w-0">
+            {rollout?.products && rollout.products.length > 0 && (
+              <Link href={`/products/${rollout.products[0].handle}`}>
+                <Button
+                  className="px-[16px] justify-center w-full bg-[#ffffffa1]"
+                  size="small"
+                >
+                  <Typography className="text-[12px]" variant="subtitle2">
+                    Buy Now
+                  </Typography>
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       )}
-      {/* Snap 1: top menu */}
-      <div className="relative h-[calc(100vh-8px)] hidden phone:h-[calc(100vh-18px)] pb-[8px] phone:pb-[18px] w-full snap-start  items-center justify-center bg-white">
-        {/* Snap 1:
-        <div className=" h-full bg-[#f2feff] flex rounded-[12px] w-full items-center flex-col snap-start relative p-4">
-          {activeRollout && (
-            <div className="hidden mt-4">
-              <CountdownTimer targetDate={new Date(activeRollout.drop_date)} />
-            </div>
-          )}
-          <div className="absolute top-0 left-0 right-0 bottom-0 pt-4 pb-[12px] z-10 flex items-center justify-between w-full px-[12px]">
-            <div className="flex items-center h-[34px]">
-              <Image
-                src="/menu-icons/4got10-2/4G.svg"
-                alt=""
-                width={100}
-                height={100}
-                className="w-fit max-h-[39px] pr-[6px]"
-              />
-              <Image
-                src="/menu-icons/4got10-2/O.svg"
-                alt=""
-                width={100}
-                height={100}
-                className="w-fit max-h-[39px] pr-[6px]"
-              />
-              <Image
-                src="/menu-icons/4got10-2/T10.svg"
-                alt=""
-                width={100}
-                height={100}
-                className="w-fit max-h-[39px] pr-[6px]"
-              />
-            </div>
-            <div className="flex items-center h-[34px]">
-              <Image
-                src="/menu-icons/4got10-2/MA.svg"
-                alt=""
-                width={100}
-                height={100}
-                className="w-fit max-h-[39px] pr-[4px]"
-              />
-              <Image
-                src="/menu-icons/4got10-2/G.svg"
-                alt=""
-                width={100}
-                height={100}
-                className="w-fit max-h-[39px] pr-[6px]"
-              />
-            </div>
-          </div>
-          <div className="flex-1 w-full flex items-center justify-center min-h-0">
-            <div className="w-full z-0 h-full">
-              <DeskScene />
-            </div>
-          </div>
-        </div>
-         */}
-        {/* Animated Row */}
-
-        <div className="w-full h-full rounded-[10px] p-[10px] flex flex-col bg-[#efefef] gap-[10px]">
-          <div className="absolute bottom-[25px] justify-between right-[15px] left-[15px] z-10 flex items-end">
-            <Image
-              src="/menu-icons/4got10-3/1.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="h-auto w-auto"
-            />
-            <Image
-              src="/menu-icons/4got10-3/2.svg"
-              alt=""
-              width={100}
-              height={100}
-              className="h-auto w-auto"
-            />
-          </div>
-          <div className="flex flex-row w-full h-2/3 gap-[10px]">
-            <div className="flex flex-row w-full h-full rounded-[9px] bg-white"></div>
-            <div className="flex flex-row w-full h-full rounded-[9px] bg-white overflow-hidden">
-              <div className="h-full w-full rounded-[48px] overflow-hidden">
-                <div
-                  className="relative h-full w-full rounded-[48px] overflow-hidden"
-                  style={{
-                    WebkitMaskImage: edgeFadeMask,
-                    maskImage: edgeFadeMask,
-                    WebkitMaskRepeat: "no-repeat",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskSize: "100% 100%",
-                    maskSize: "100% 100%",
-                    WebkitMaskPosition: "50% 50%",
-                    maskPosition: "50% 50%",
-                  }}
-                >
-                  <SimpleDeskScene />
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-row w-full h-full rounded-[9px] bg-white"></div>
-          </div>
-          <div className="relative w-full h-1/3 flex items-center justify-center overflow-hidden">
-            <div
-              key={itemsPerSide}
-              className="flex w-full h-full items-center  rounded-[10px]  gap-[10px]"
-              id="animated-row"
-            >
-              {/* Left container */}
-              <div
-                ref={leftRowRef}
-                className="flex flex-1 h-full items-center overflow-hidden"
-              >
-                {Array.from({ length: itemsPerSide }, (_, index) => index).map(
-                  (index) => (
-                    <div
-                      key={`left-${index}`}
-                      className="h-full rounded-lg flex-shrink-0 px-[5px] overflow-hidden"
-                      style={{
-                        flexBasis: `${100 / itemsPerSide}%`,
-                        width: "auto",
-                        minWidth: 0,
-                      }}
-                      data-side="left"
-                    >
-                      <div className="w-full bg-[#ffffff] rounded-[9px] h-full flex items-center justify-center text-white font-bold text-xl overflow-hidden whitespace-nowrap">
-                        {index + 1}
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-              {/* Right container */}
-              <div
-                ref={rightRowRef}
-                className="flex flex-1 h-full items-center overflow-hidden"
-              >
-                {Array.from(
-                  { length: itemsPerSide },
-                  (_, index) => index + itemsPerSide
-                ).map((index) => (
-                  <div
-                    key={`right-${index}`}
-                    className="h-full rounded-lg flex-shrink-0 px-[5px] overflow-hidden"
-                    style={{
-                      flexBasis: `${100 / itemsPerSide}%`,
-                      width: "auto",
-                      minWidth: 0,
-                    }}
-                    data-side="right"
-                  >
-                    <div className="w-full bg-[#ffffff] rounded-[9px] h-full flex items-center justify-center text-white font-bold text-xl overflow-hidden whitespace-nowrap">
-                      {index + 1}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Snap 2: page content */}
-      <div className="min-h-screen hidden bg-white w-full items-center  flex-col gap-[8px] phone:gap-[12px] bg-transparent snap-start relative">
-        <div className="h-fit bg-[#efefef] pt-[70 px] rounded-[12px] w-full items-center flex flex-col snap-start relative">
-          <FourGotTenMenu
-            regions={regions}
-            cart={cart}
-            scrollContainerRef={scrollContainerRef}
-            isHomePage={true}
-          />
-
-          <div className="px-[8px] rounded-[8px] phone:px-[12px] flex flex-col py-[8px] phone:py-[12px] items-center gap-[8px] phone:gap-[12px] justify-center h-fit w-full">
-            <div className="rounded-[12px] bg-white w-full h-[300px]"></div>
-
-            <div className="flex flex-row gap-[8px] phone:gap-[12px] w-full h-[800px]">
-              <div className="rounded-[12px] bg-white w-full h-full"></div>
-              <div className="rounded-[12px] bg-white w-full h-full"></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

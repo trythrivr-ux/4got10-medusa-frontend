@@ -7,6 +7,7 @@ import "styles/fonts.css"
 import "styles/globals.css"
 import { listRegions } from "@lib/data/regions"
 import { CustomLayoutProvider } from "@/context/custom-layout-context"
+import { RolloutProvider } from "@/context/rollout-context"
 import CustomLayoutWrapper from "@/modules/layout/components/custom-layout-wrapper"
 import GeolocationRedirect from "@/components/geolocation-redirect"
 
@@ -79,12 +80,14 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en" data-mode="light" className={plusJakartaSans.variable}>
       <body className="bg-[#ffffff] overflow-x-hidden">
-        <CustomLayoutProvider>
-          <CustomLayoutWrapper regions={regions}>
-            <GeolocationRedirect />
-            {props.children}
-          </CustomLayoutWrapper>
-        </CustomLayoutProvider>
+        <RolloutProvider>
+          <CustomLayoutProvider>
+            <CustomLayoutWrapper regions={regions}>
+              <GeolocationRedirect />
+              {props.children}
+            </CustomLayoutWrapper>
+          </CustomLayoutProvider>
+        </RolloutProvider>
       </body>
     </html>
   )

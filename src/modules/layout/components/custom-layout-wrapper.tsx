@@ -1,7 +1,7 @@
 "use client"
 
 import { useCustomLayout } from "@/context/custom-layout-context"
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { HttpTypes } from "@medusajs/types"
 import { usePathname } from "next/navigation"
 import gsap from "gsap"
@@ -26,6 +26,9 @@ export default function CustomLayoutWrapper({
 
   // Check if we're on the home page (e.g., "/us" or "/dk")
   const isHomePage = pathname?.match(/^\/[a-z]{2}$/) !== null
+
+  // Check if we're on the release page (e.g., "/us/release" or "/dk/release")
+  const isReleasePage = pathname?.match(/^\/[a-z]{2}\/release$/) !== null
 
   // Check if we're on a product detail page
   const isProductPage =
@@ -61,8 +64,8 @@ export default function CustomLayoutWrapper({
       document.body.style.touchAction = "none"
       document.documentElement.style.overscrollBehavior = "none"
       document.documentElement.style.touchAction = "none"
-    } else if (isHomePage) {
-      // Prevent body scroll on home page since we have our own scroll container
+    } else if (isHomePage || isReleasePage) {
+      // Prevent body scroll on home page and release page since we have our own scroll container
       document.body.style.overflow = "hidden"
       document.documentElement.style.overflow = "hidden"
     } else {
@@ -82,9 +85,10 @@ export default function CustomLayoutWrapper({
       document.body.style.overflow = ""
       document.documentElement.style.overflow = ""
     }
-  }, [customLayout, isHomePage])
+  }, [customLayout, isHomePage, isReleasePage])
 
   useEffect(() => {
+    // Normal loading animation for all pages
     const curtain = curtainRef.current
     if (!curtain) return
 
@@ -106,6 +110,9 @@ export default function CustomLayoutWrapper({
     if (prevPathname.current === pathname) return
     prevPathname.current = pathname
 
+    // Skip curtain animation for home and release pages
+    if (isHomePage || isReleasePage) return
+
     const curtain = curtainRef.current
     if (!curtain) return
 
@@ -121,7 +128,7 @@ export default function CustomLayoutWrapper({
     return () => {
       tl.kill()
     }
-  }, [pathname])
+  }, [pathname, isHomePage, isReleasePage])
 
   return (
     <TransitionProvider curtainRef={curtainRef}>
