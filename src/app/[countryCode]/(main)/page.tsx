@@ -34,6 +34,13 @@ export default function HomePage() {
   const releaseButtonRef = useRef<HTMLDivElement>(null)
   const buyButtonRef = useRef<HTMLDivElement>(null)
   const volumeInfoRef = useRef<HTMLDivElement>(null)
+  const countdownRef = useRef<HTMLDivElement>(null)
+  const [countdown, setCountdown] = useState({
+    days: "00",
+    hours: "00",
+    minutes: "00",
+    seconds: "00",
+  })
 
   useEffect(() => {
     const leftRow = leftRowRef.current
@@ -289,6 +296,42 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    if (!rollout || !rollout.drop_date) return
+
+    const updateCountdown = () => {
+      const now = Date.now()
+      const dropTime = rollout.drop_date
+        ? new Date(rollout.drop_date).getTime()
+        : null
+      if (!dropTime) return
+      const timeUntil = dropTime - now
+
+      if (timeUntil <= 0) {
+        setCountdown({ days: "00", hours: "00", minutes: "00", seconds: "00" })
+      } else {
+        const days = Math.floor(timeUntil / (1000 * 60 * 60 * 24))
+        const hours = Math.floor(
+          (timeUntil % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        )
+        const minutes = Math.floor((timeUntil % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((timeUntil % (1000 * 60)) / 1000)
+
+        setCountdown({
+          days: days.toString().padStart(2, "0"),
+          hours: hours.toString().padStart(2, "0"),
+          minutes: minutes.toString().padStart(2, "0"),
+          seconds: seconds.toString().padStart(2, "0"),
+        })
+      }
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+
+    return () => clearInterval(interval)
+  }, [rollout])
+
+  useEffect(() => {
     console.log(
       "Animation useEffect - rollout:",
       rollout,
@@ -337,6 +380,20 @@ export default function HomePage() {
               newImageRef.current,
               { height: "0px" },
               { height: "100%", duration: 0.5, ease: "power2.inOut" },
+              "<"
+            )
+          }
+
+          // Animate countdown from w-full to w-0
+          if (countdownRef.current) {
+            tl.to(
+              countdownRef.current,
+              {
+                width: "0px",
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.inOut",
+              },
               "<"
             )
           }
@@ -517,7 +574,32 @@ export default function HomePage() {
         />
       </div>
       {rollout && rollout.drop_date && (
-        <div className="absolute top-1/2 left-1/2 w-full px-[12px] -translate-x-1/2 -translate-y-1/2 z-10">
+        <div className="absolute top-1/2  left-1/2 w-full px-[12px] -translate-x-1/2 -translate-y-1/2 z-10">
+          <div
+            ref={countdownRef}
+            className="justify-between pb-[10px] opacity-[55%] flex-row flex w-full overflow-hidden"
+          >
+            <Typography
+              className={`text-[22px] text-white ${
+                countdown.days === "00" ? "phone:hidden" : ""
+              }`}
+              variant="title"
+            >
+              {countdown.days} D
+            </Typography>
+
+            <Typography className="text-[22px] text-white " variant="title">
+              {countdown.hours} H
+            </Typography>
+
+            <Typography className="text-[22px] text-white " variant="title">
+              {countdown.minutes} M
+            </Typography>
+
+            <Typography className="text-[22px] text-white " variant="title">
+              {countdown.seconds} S
+            </Typography>
+          </div>
           <div ref={releaseButtonRef} className="overflow-hidden">
             <Button
               className="px-[16px] justify-between w-full bg-[#ffffff55]"
